@@ -97,6 +97,8 @@ def parse_command_line_arguments():
     )
     parser.add_argument("--density_ema_fac", type=float, default=None,
                         help="configured EMA decay for density consistency (default: first EMA)")
+    parser.add_argument("--cycle_weight", type=float, default=None,
+                        help="LSD weight of the velocity and density round-trip (cycle) losses (default 0)")
     parser.add_argument("--offdiag_time_order", choices=["square", "forward"], default=None,
                         help="off-diagonal time pairs: independent square or ordered forward")
     parser.add_argument("--diag_tmax", type=float, default=None,
@@ -422,6 +424,10 @@ def setup_config_dict(args):
         if getattr(cfg.network, "logvar_channels", None) is None:
             raise ValueError("--use_weight requires --logvar_channels (or config logvar_channels)")
         cfg.logging.wandb_name += f"_logvar{cfg.network.logvar_channels}"
+        cfg.logging.output_name = cfg.logging.wandb_name
+    if args.cycle_weight is not None:
+        cfg.training.cycle_weight = args.cycle_weight
+        cfg.logging.wandb_name += f"_cycle{args.cycle_weight}"
         cfg.logging.output_name = cfg.logging.wandb_name
     if args.wandb_name_suffix:
         cfg.logging.wandb_name += args.wandb_name_suffix

@@ -1,0 +1,1652 @@
+% =====================================================================
+%  Notes template  (same layout as "Turning Noise into Data, with Densities")
+%  Compile with:  pdflatex notes_template.tex   (run twice for references)
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+% ---------- page and fonts ----------
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{microtype}
+
+% ---------- mathematics ----------
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+
+% ---------- lists, tables, colour ----------
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+
+% ---------- figures and boxes ----------
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\usepackage[most]{tcolorbox}
+
+% ---------- pseudocode ----------
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% ---------- citations ----------
+\usepackage[round,authoryear]{natbib}
+
+% ---------- links (load last) ----------
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+
+% ---------- spacing: no indents, space between paragraphs ----------
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+\linespread{1.06}
+\setlist{itemsep=0.3em,topsep=0.3em}
+\setlength{\emergencystretch}{3em}   % avoids overfull lines
+\numberwithin{equation}{section}     % equations numbered (section.n)
+
+% ---------- theorem environments (one shared counter per section) ----------
+\theoremstyle{plain}        % italic body
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}   % upright body
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{problem}[theorem]{Problem}
+\theoremstyle{remark}       % italic heading, upright body
+\newtheorem{remark}[theorem]{Remark}
+
+% ---------- coloured boxes ----------
+% Section summary box:  \begin{idea} ... \end{idea}
+\newtcolorbox{idea}{enhanced,colback=blue!4,colframe=blue!4,boxrule=0pt,arc=2pt,
+  left=9pt,right=9pt,top=7pt,bottom=7pt,before skip=6pt,after skip=10pt,
+  before upper={\textbf{In short.}\ }}
+% Warning box:  \begin{pitfall} ... \end{pitfall}
+\newtcolorbox{pitfall}{enhanced,colback=orange!8,colframe=orange!8,boxrule=0pt,arc=2pt,
+  left=9pt,right=9pt,top=7pt,bottom=7pt,before skip=6pt,after skip=10pt,
+  before upper={\textbf{Common pitfall.}\ }}
+% ---------- notation ----------
+% Convention: vectors, matrices and vector fields bold; scalars not.
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\Normal}{\mathcal{N}}
+\newcommand{\dd}{\mathrm{d}}            % upright d in integrals: \dd x
+% bold vectors (add more as needed)
+\newcommand{\va}{\mathbf{a}}  \newcommand{\vb}{\mathbf{b}}  \newcommand{\vc}{\mathbf{c}}
+\newcommand{\ve}{\mathbf{e}}  \newcommand{\vf}{\mathbf{f}}  \newcommand{\vg}{\mathbf{g}}
+\newcommand{\vu}{\mathbf{u}}  \newcommand{\vv}{\mathbf{v}}  \newcommand{\vw}{\mathbf{w}}
+\newcommand{\vx}{\mathbf{x}}  \newcommand{\vy}{\mathbf{y}}  \newcommand{\vz}{\mathbf{z}}
+\newcommand{\vX}{\mathbf{X}}  \newcommand{\vY}{\mathbf{Y}}
+\newcommand{\vzero}{\mathbf{0}} \newcommand{\vone}{\mathbf{1}}
+\newcommand{\vmu}{\boldsymbol{\mu}} \newcommand{\veps}{\boldsymbol{\varepsilon}}
+\newcommand{\vtheta}{\boldsymbol{\theta}}
+% bold matrices
+\newcommand{\mA}{\mathbf{A}}  \newcommand{\mB}{\mathbf{B}}  \newcommand{\mC}{\mathbf{C}}
+\newcommand{\mJ}{\mathbf{J}}  \newcommand{\mU}{\mathbf{U}}  \newcommand{\mV}{\mathbf{V}}
+\newcommand{\mId}{\mathbf{I}_d}
+\newcommand{\mSigma}{\boldsymbol{\Sigma}}
+% operators
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\Diag}{Diag}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+% ---------- title ----------
+\title{Part IIB: Research Project\\[0.4em]
+\large Mihnea Morarescu}
+\author{}
+\date{\today}
+
+% =====================================================================
+\begin{document}
+\maketitle
+
+\section*{About these notes}
+
+These notes were developed to have a place where all of my ideas could go to and be stored accordingly. These notes include the theory behind flow maps, experiments that were done and more. Sources for every idea are cited in the text and collected in the bibliography at the end.
+
+\subsection*{Notation}
+\begin{itemize}
+\item \textbf{Typeface.} Vectors, matrices and vector fields are bold ($\vx$, $\mJ$, $\vv$); scalars are not ($t$, $d$, $p$).
+\item \textbf{Dimension.} $d\in\N$ is the dimension of $\R^d$; $\|\cdot\|$ is the Euclidean norm.
+\end{itemize}
+
+\tableofcontents
+
+% ---------------------------------------------------------------------
+\clearpage
+
+\part{Flow matching}
+
+\section{Transporting one distribution to another}
+
+\paragraph{General description.} We have some complicated probability distribution on $\mathbb{R}^d$. We require a model of it that can both produce samples and evaluate densities. Models that do both by transforming a simple distribution are \emph{normalizing flows} \citep{rezende2015}.
+
+\begin{theorem}[Change of variables for integrals]\label{thm:cov-int}
+Let $\mathbf{g}:\mathbb{R}^d\to\mathbb{R}^d$ be invertible, with $\mathbf{g}$ and $\mathbf{g}^{-1}$ differentiable, and let $h:\mathbb{R}^d\to[0,\infty)$. Then, for any region $B\subseteq\mathbb{R}^d$,
+\[
+\int_{\mathbf{g}(B)}h(\mathbf{x})\,\mathrm{d}\mathbf{x}=\int_B h(\mathbf{g}(\mathbf{y}))\,\left|\det\mathbf{J}_{\mathbf{g}}(\mathbf{y})\right|\,\mathrm{d}\mathbf{y} .
+\]
+\end{theorem}
+
+Following this, we may deduce the change of variables formula for probability densities. A good heuristic to remember it is to write $p(y)\,\mathrm{d}y=p(x)\,\mathrm{d}x$: probability is conserved. If we are interested in the map $x\mapsto y$, then $p(y)=p(x)\,\frac{\mathrm{d}x}{\mathrm{d}y}$, that is,
+\[
+p(y)=\frac{p(x)}{\left|\mathrm{d}y/\mathrm{d}x\right|} .
+\]
+
+\begin{theorem}[Change of variables for probability densities]\label{thm:cov}
+Let $\mathbf{f}:\mathbb{R}^d\to\mathbb{R}^d$ be invertible, with $\mathbf{f}$ and $\mathbf{f}^{-1}$ differentiable. Let $\mathbf{X}$ be a random vector with density $p_X:\mathbb{R}^d\to[0,\infty)$, and let $\mathbf{Y}=\mathbf{f}(\mathbf{X})$. Then $\mathbf{Y}$ has density
+\[
+p_Y(\mathbf{y})=\frac{p_X(\mathbf{x})}{\left|\det\mathbf{J}_{\mathbf{f}}(\mathbf{x})\right|},\qquad\mathbf{x}=\mathbf{f}^{-1}(\mathbf{y}).
+\]
+Equivalently, whenever $p_X(\mathbf{x})>0$,
+\[
+\log p_Y(\mathbf{y})=\log p_X(\mathbf{x})-\log\left|\det\mathbf{J}_{\mathbf{f}}(\mathbf{x})\right| .
+\]
+\end{theorem}
+
+While it may seem that the problem is solved, the main issue is how to find the map $\mathbf{f}$ that takes $\mathbf{X}$ to $\mathbf{Y}$. There are three obstacles.
+\begin{enumerate}
+\item \emph{Invertibility.} The map must be invertible, so a generic network will not do: a ReLU network, for instance, sends the whole region $x<0$ to zero, which violates invertibility.
+\item \emph{The Jacobian is expensive to form.} Automatic differentiation produces one row or column of $\mathbf{J}_{\mathbf{f}}$ per pass, so forming it takes $d$ passes.
+\item \emph{The determinant is expensive to compute.} It costs $\mathcal{O}(d^3)$ operations, which quickly becomes infeasible for large inputs.
+\end{enumerate}
+We need to be more intelligent.
+
+\newpage
+
+\section{Building the flow map}
+
+\paragraph{General description.} Instead of learning one complicated map, compose many tiny steps. In the limit, the composition becomes the flow of an ordinary differential equation (ODE) driven by some velocity field $\mathbf{v}_t$. This is the idea behind continuous normalizing flows \citep{chen2018,grathwohl2019}.
+
+Recall that our map should satisfy three main constraints:
+\begin{enumerate}
+\item it is invertible;
+\item $\log\left|\det\mathbf{J}_{\mathbf{f}}\right|$ is cheap to compute;
+\item the family is flexible enough to transport $p_0$ to complicated targets $p_1$.
+\end{enumerate}
+
+The main idea is to fix some velocity field $\mathbf{v}$ and take $K$ small time steps, each of size $h=1/K$, with $t_k=kh$. Each step moves every point by a small amount,
+\[
+\mathbf{x}_{k+1}=\mathbf{x}_k+h\,\mathbf{v}_{t_k}(\mathbf{x}_k),
+\]
+and we set $\mathbf{f}$ to be the composition of the $K$ steps. Two things happen.
+\begin{enumerate}
+\item \emph{Each step is invertible.} Suppose two points $\mathbf{a}\neq\mathbf{b}$ were sent to the same place: $\mathbf{a}+h\mathbf{v}(\mathbf{a})=\mathbf{b}+h\mathbf{v}(\mathbf{b})$. Then $\mathbf{a}-\mathbf{b}=h\left(\mathbf{v}(\mathbf{b})-\mathbf{v}(\mathbf{a})\right)$, and if $\mathbf{v}$ is Lipschitz with constant $L$,
+\[
+\|\mathbf{a}-\mathbf{b}\|\le hL\,\|\mathbf{a}-\mathbf{b}\| .
+\]
+If $hL<1$ this forces $\mathbf{a}=\mathbf{b}$, so collisions cannot happen. A small step alone is not enough: for $\mathbf{v}(\mathbf{x})=-\mathbf{x}$ and $h=1$, every point is sent to $\mathbf{0}$. The step must be small compared with $1/L$.
+\item \emph{Each step has a cheap log-determinant.} The Jacobian of a step is $\mathbf{I}_d+h\mathbf{J}_{\mathbf{v}}$. We will prove later, using Jacobi's lemma, that its log-determinant is approximately a trace rather than a determinant.
+\end{enumerate}
+Note that the intermediate points are Euler steps for the ODE $\dot{\mathbf{x}}=\mathbf{v}_t(\mathbf{x})$. Letting $K\to\infty$ suggests that we take $\mathbf{f}$ to be the exact solution map of this ODE.
+
+\begin{definition}[Velocity field]\label{def:vfield}
+A \emph{velocity field} is a continuously differentiable map $\mathbf{v}:[0,1]\times\mathbb{R}^d\to\mathbb{R}^d$, $(t,\mathbf{x})\mapsto\mathbf{v}_t(\mathbf{x})$, assigning a velocity to each time and point, that is Lipschitz in $\mathbf{x}$ with a constant $L$ independent of $t$:
+\[
+\|\mathbf{v}_t(\mathbf{x})-\mathbf{v}_t(\mathbf{y})\|\le L\,\|\mathbf{x}-\mathbf{y}\|\qquad\text{for all }t\in[0,1]\text{ and }\mathbf{x},\mathbf{y}\in\mathbb{R}^d .
+\]
+\end{definition}
+
+\begin{theorem}[Picard--Lindel\"of theorem, global form]\label{thm:pl}
+Let $\mathbf{v}$ be a velocity field. For every $s\in[0,1]$ and $\mathbf{y}\in\mathbb{R}^d$ there is exactly one differentiable curve $\mathbf{x}:[0,1]\to\mathbb{R}^d$ with
+\[
+\dot{\mathbf{x}}(\tau)=\mathbf{v}_\tau(\mathbf{x}(\tau))\quad\text{for all }\tau\in[0,1],\qquad\mathbf{x}(s)=\mathbf{y} .
+\]
+\end{theorem}
+
+\begin{definition}[Trajectory and flow map]\label{def:flowmap}
+The solution in Theorem~\ref{thm:pl} is the \emph{trajectory through $(s,\mathbf{y})$}. The \emph{flow map at time $t$} is
+\[
+\boldsymbol{\phi}_t:\mathbb{R}^d\to\mathbb{R}^d,\qquad\boldsymbol{\phi}_t(\mathbf{x}_0):=\mathbf{x}(t),
+\]
+where $\mathbf{x}$ is the trajectory through $(0,\mathbf{x}_0)$. We write $\mathbf{x}_t=\boldsymbol{\phi}_t(\mathbf{x}_0)$. By the fundamental theorem of calculus, $\mathbf{x}_t=\mathbf{x}_0+\int_0^t\mathbf{v}_s(\mathbf{x}_s)\,\mathrm{d}s$.
+\end{definition}
+
+So the flow map $\boldsymbol{\phi}_t$ is the map $\mathbf{x}_0\mapsto\mathbf{x}_t$. This may seem trivial at the moment, but we will see the benefit of introducing it.
+
+\begin{definition}[Continuous normalizing flow; \citealp{chen2018}]\label{def:cnf}
+Let $\mathbf{x}_0\sim p_0$ (the base, or noise, distribution) and let $\mathbf{v}$ be a velocity field. Denote the density of $\mathbf{x}_t=\boldsymbol{\phi}_t(\mathbf{x}_0)$ by $p_t:\mathbb{R}^d\to(0,\infty)$. A \emph{continuous normalizing flow} takes $\mathbf{v}=\mathbf{v}_\theta$ to be a neural network and uses $\mathbf{f}_\theta=\boldsymbol{\phi}_1$ as its transport map. Its model density $q_\theta$ is the density generated at time $1$.
+\end{definition}
+
+Note that in this model the time axis is the closed interval $[0,1]$. To find the density $p_t$ we still need the Jacobian of the flow map. Computing it directly would cost $\mathcal{O}(d^3)$ per point, so it seems that we are back where we started. However, we will see that defining the problem in this way lets us avoid this cost. Recall that the flow map may be viewed as a map
+\[
+\mathbf{x}_0\xrightarrow{\ \boldsymbol{\phi}_t\ }\mathbf{x}_t .
+\]
+It makes sense to define its Jacobian and see whether anything changes compared with the previous viewpoint.
+
+\begin{definition}[Jacobian of the flow map]\label{def:Mt}
+Fix $\mathbf{x}_0\in\mathbb{R}^d$ and let $\mathbf{x}_t=\boldsymbol{\phi}_t(\mathbf{x}_0)$. Define the matrices
+\[
+\mathbf{M}_t:=\mathbf{J}_{\boldsymbol{\phi}_t}(\mathbf{x}_0)=\frac{\partial\mathbf{x}_t}{\partial\mathbf{x}_0}\in\mathbb{R}^{d\times d},
+\qquad
+\mathbf{A}_t:=\mathbf{J}_{\mathbf{v}_t}(\mathbf{x}_t)\in\mathbb{R}^{d\times d}.
+\]
+\end{definition}
+
+\begin{lemma}[Variational equation]\label{lem:variational}
+For all $t\in[0,1]$, $\dfrac{\mathrm{d}}{\mathrm{d}t}\mathbf{M}_t=\mathbf{A}_t\mathbf{M}_t$, with $\mathbf{M}_0=\mathbf{I}_d$.
+\end{lemma}
+
+\begin{proof}
+The trajectory satisfies $\frac{\mathrm{d}\mathbf{x}_t}{\mathrm{d}t}=\mathbf{v}_t(\mathbf{x}_t)$. Substituting $\mathbf{x}_t=\boldsymbol{\phi}_t(\mathbf{x}_0)$ gives
+\[
+\partial_t\boldsymbol{\phi}_t(\mathbf{x}_0)=\mathbf{v}_t(\boldsymbol{\phi}_t(\mathbf{x}_0)).
+\]
+Both sides are differentiable in $\mathbf{x}_0$, so we take the Jacobian with respect to $\mathbf{x}_0$ of both sides; the rest is the chain rule.
+\begin{itemize}
+\item \emph{Left side.} The order of the derivatives can be exchanged:
+\[
+\frac{\partial}{\partial\mathbf{x}_0}\frac{\partial\boldsymbol{\phi}_t(\mathbf{x}_0)}{\partial t}=\frac{\partial}{\partial t}\frac{\partial\boldsymbol{\phi}_t(\mathbf{x}_0)}{\partial\mathbf{x}_0}=\frac{\partial}{\partial t}\frac{\partial\mathbf{x}_t}{\partial\mathbf{x}_0}=\frac{\mathrm{d}}{\mathrm{d}t}\mathbf{M}_t .
+\]
+\item \emph{Right side.} By the chain rule,
+\[
+\frac{\partial}{\partial\mathbf{x}_0}\mathbf{v}_t(\boldsymbol{\phi}_t(\mathbf{x}_0))=\mathbf{J}_{\mathbf{v}_t}(\boldsymbol{\phi}_t(\mathbf{x}_0))\,\frac{\partial\boldsymbol{\phi}_t(\mathbf{x}_0)}{\partial\mathbf{x}_0}=\mathbf{A}_t\mathbf{M}_t .
+\]
+\end{itemize}
+Equating the two sides gives the ODE. Finally, $\boldsymbol{\phi}_0$ is the identity map, so $\mathbf{M}_0=\mathbf{I}_d$.
+\end{proof}
+
+\begin{lemma}[Jacobi's lemma]\label{lem:jacobi}
+Let $\mathbf{A}\in\mathbb{R}^{d\times d}$ and $h\in\mathbb{R}$. Then
+\[
+\det(\mathbf{I}_d+h\mathbf{A})=1+h\operatorname{tr}\mathbf{A}+O(h^2)\qquad\text{as }h\to0 .
+\]
+\end{lemma}
+
+\begin{proof}
+Let $\lambda_1,\dots,\lambda_d\in\mathbb{C}$ be the eigenvalues of $\mathbf{A}$, listed with algebraic multiplicity. Recall that the determinant of a matrix is the product of its eigenvalues, and its trace is their sum:
+\[
+\det\mathbf{A}=\prod_{i=1}^d\lambda_i,\qquad\operatorname{tr}\mathbf{A}=\sum_{i=1}^d\lambda_i .
+\]
+If $\mathbf{A}\mathbf{x}=\lambda\mathbf{x}$, then
+\[
+(\mathbf{I}_d+h\mathbf{A})\mathbf{x}=\mathbf{x}+h\lambda\mathbf{x}=(1+h\lambda)\mathbf{x},
+\]
+so $1+h\lambda$ is an eigenvalue of $\mathbf{I}_d+h\mathbf{A}$ with the same eigenvector. In fact the eigenvalues of $\mathbf{I}_d+h\mathbf{A}$ are exactly $1+h\lambda_1,\dots,1+h\lambda_d$, with the same multiplicities. For $h\neq0$ this follows from the characteristic polynomial,
+\[
+\det\left((\mathbf{I}_d+h\mathbf{A})-\mu\mathbf{I}_d\right)=h^d\det\left(\mathbf{A}-\tfrac{\mu-1}{h}\mathbf{I}_d\right),
+\]
+which vanishes exactly when $(\mu-1)/h$ is an eigenvalue of $\mathbf{A}$, that is, when $\mu=1+h\lambda_i$. For $h=0$ the claim is trivial.
+
+Hence
+\[
+\det(\mathbf{I}_d+h\mathbf{A})=\prod_{i=1}^d(1+h\lambda_i)=1+h\sum_{i=1}^d\lambda_i+h^2\rho(h),
+\]
+where $\rho(h)$ collects the products of two or more of the terms $h\lambda_i$, divided by $h^2$. It is a polynomial in $h$, so it stays bounded as $h\to0$, and $h^2\rho(h)=O(h^2)$. Since $\sum_i\lambda_i=\operatorname{tr}\mathbf{A}$,
+\[
+\det(\mathbf{I}_d+h\mathbf{A})=1+h\operatorname{tr}\mathbf{A}+O(h^2). \qedhere
+\]
+\end{proof}
+
+\begin{proposition}[Jacobi's formula along the flow; \citealp{magnus2019}]\label{prop:jacobiflow}
+The function $t\mapsto\det\mathbf{M}_t$ is differentiable, and
+\[
+\frac{\mathrm{d}}{\mathrm{d}t}\det\mathbf{M}_t=\operatorname{tr}(\mathbf{A}_t)\,\det\mathbf{M}_t .
+\]
+\end{proposition}
+
+\begin{proof}
+Fix $t\in[0,1]$. By Lemma~\ref{lem:variational}, the Jacobian of the flow map satisfies the ODE
+\[
+\frac{\mathrm{d}}{\mathrm{d}t}\mathbf{M}_t=\mathbf{A}_t\mathbf{M}_t .
+\]
+In particular $\mathbf{M}$ is differentiable at $t$, so by Taylor's theorem to first order,
+\[
+\mathbf{M}_{t+h}=\mathbf{M}_t+h\,\frac{\mathrm{d}}{\mathrm{d}t}\mathbf{M}_t+\mathbf{R}_h=(\mathbf{I}_d+h\mathbf{A}_t)\,\mathbf{M}_t+\mathbf{R}_h,
+\qquad\text{where }\frac{\|\mathbf{R}_h\|}{h}\to0\text{ as }h\to0,
+\]
+that is, $\mathbf{R}_h=o(h)$; the second equality uses the ODE.
+
+Now take determinants. The determinant is a polynomial in the entries of the matrix, so perturbing a matrix by $o(h)$ changes its determinant by only $o(h)$. Together with the multiplicativity of the determinant,
+\[
+\det\mathbf{M}_{t+h}=\det(\mathbf{I}_d+h\mathbf{A}_t)\,\det\mathbf{M}_t+o(h).
+\]
+By Jacobi's lemma (Lemma~\ref{lem:jacobi}), $\det(\mathbf{I}_d+h\mathbf{A}_t)=1+h\operatorname{tr}\mathbf{A}_t+O(h^2)$. The term $O(h^2)\det\mathbf{M}_t$ is also $o(h)$, hence
+\[
+\det\mathbf{M}_{t+h}=\left(1+h\operatorname{tr}\mathbf{A}_t\right)\det\mathbf{M}_t+o(h).
+\]
+Subtracting $\det\mathbf{M}_t$ and dividing by $h$,
+\[
+\frac{\det\mathbf{M}_{t+h}-\det\mathbf{M}_t}{h}=\operatorname{tr}(\mathbf{A}_t)\,\det\mathbf{M}_t+o(1).
+\]
+Letting $h\to0$ (one-sidedly at the endpoints of $[0,1]$) shows that $t\mapsto\det\mathbf{M}_t$ is differentiable, with
+\[
+\frac{\mathrm{d}}{\mathrm{d}t}\det\mathbf{M}_t=\operatorname{tr}(\mathbf{A}_t)\,\det\mathbf{M}_t . \qedhere
+\]
+\end{proof}
+
+This equality is extremely useful. Recall from Theorem~\ref{thm:cov} that $\log p_Y(\mathbf{y})=\log p_X(\mathbf{x})-\log\left|\det\frac{\partial\mathbf{y}}{\partial\mathbf{x}}\right|$. Applied to the flow map, whose Jacobian is $\mathbf{M}_t$, it gives a change of variables formula for the density $p_t$.
+
+\begin{proposition}[Instantaneous change of variables; \citealp{chen2018}]\label{prop:icov}
+Let $p_t$ be the density generated by $\mathbf{v}$ from $p_0$. For every $\mathbf{x}_0\in\mathbb{R}^d$ and $t\in[0,1]$, with $\mathbf{x}_t=\boldsymbol{\phi}_t(\mathbf{x}_0)$,
+\[
+\log p_t(\mathbf{x}_t)=\log p_0(\mathbf{x}_0)-\int_0^t(\nabla\cdot\mathbf{v}_s)(\mathbf{x}_s)\,\mathrm{d}s .
+\]
+Equivalently, $\dfrac{\mathrm{d}}{\mathrm{d}t}\log p_t(\mathbf{x}_t)=-(\nabla\cdot\mathbf{v}_t)(\mathbf{x}_t)$.
+\end{proposition}
+
+\begin{proof}
+\emph{The trace of a Jacobian is the divergence.} For a vector field $\mathbf{F}:\mathbb{R}^d\to\mathbb{R}^d$, the Jacobian has entries $[\mathbf{J}_{\mathbf{F}}]_{ij}=\partial F^{(i)}/\partial x^{(j)}$, so its trace is the sum of the diagonal entries,
+\[
+\operatorname{tr}\mathbf{J}_{\mathbf{F}}=\sum_{i=1}^d\frac{\partial F^{(i)}}{\partial x^{(i)}}=\nabla\cdot\mathbf{F}.
+\]
+Applied to $\mathbf{A}_t=\mathbf{J}_{\mathbf{v}_t}(\mathbf{x}_t)$, this gives $\operatorname{tr}\mathbf{A}_t=(\nabla\cdot\mathbf{v}_t)(\mathbf{x}_t)$.
+
+\emph{The determinant of $\mathbf{M}_t$.} By Proposition~\ref{prop:jacobiflow}, $y(t):=\det\mathbf{M}_t$ satisfies
+\[
+y'(t)=a(t)\,y(t),\qquad a(t):=\operatorname{tr}\mathbf{A}_t=(\nabla\cdot\mathbf{v}_t)(\mathbf{x}_t),
+\]
+with $y(0)=\det\mathbf{I}_d=1$, since $\boldsymbol{\phi}_0$ is the identity. Let $z(t):=\exp\left(\int_0^ta(s)\,\mathrm{d}s\right)>0$, so that $z'=az$ and $z(0)=1$. Then
+\[
+\left(\frac{y}{z}\right)'=\frac{y'z-yz'}{z^2}=\frac{ayz-yaz}{z^2}=0,
+\]
+so $y/z$ is constant and equal to $y(0)/z(0)=1$. Hence
+\[
+\det\mathbf{M}_t=\exp\left(\int_0^t(\nabla\cdot\mathbf{v}_s)(\mathbf{x}_s)\,\mathrm{d}s\right)>0,
+\qquad
+\log\det\mathbf{M}_t=\int_0^t(\nabla\cdot\mathbf{v}_s)(\mathbf{x}_s)\,\mathrm{d}s .
+\]
+
+\emph{Change of variables.} The flow map $\boldsymbol{\phi}_t$ is invertible and differentiable with Jacobian $\mathbf{M}_t$, and $\mathbf{x}_t=\boldsymbol{\phi}_t(\mathbf{x}_0)$ with $\mathbf{x}_0\sim p_0$. By Theorem~\ref{thm:cov},
+\[
+\log p_t(\mathbf{x}_t)=\log p_0(\mathbf{x}_0)-\log\left|\det\mathbf{M}_t\right| .
+\]
+Since $\det\mathbf{M}_t>0$, the absolute value can be dropped, and substituting the expression for $\log\det\mathbf{M}_t$ gives
+\[
+\log p_t(\mathbf{x}_t)=\log p_0(\mathbf{x}_0)-\int_0^t(\nabla\cdot\mathbf{v}_s)(\mathbf{x}_s)\,\mathrm{d}s .
+\]
+The integrand is continuous in $s$, so differentiating in $t$ (fundamental theorem of calculus) gives the second form, $\frac{\mathrm{d}}{\mathrm{d}t}\log p_t(\mathbf{x}_t)=-(\nabla\cdot\mathbf{v}_t)(\mathbf{x}_t)$.
+\end{proof}
+
+\paragraph{Why this form is preferred \citep{chen2018,grathwohl2019}.} Invertibility is now automatic: every Lipschitz velocity field gives an invertible map $\boldsymbol{\phi}_1$, with no constraint on the network architecture. Furthermore, the log-determinant has been \textbf{replaced by a trace}, which only requires the $d$ diagonal entries $\partial v^{(i)}/\partial x^{(i)}$ and no matrix factorisation. The cost is $d$ derivative passes and $O(d)$ memory, with no $d^3$ term. The trace can also be estimated cheaply using random projections, as we will see below. Lastly, $\mathbf{v}_\theta$ may be \textbf{any network architecture}, as long as it remains Lipschitz.
+
+\begin{lemma}[Hutchinson's estimator; \citealp{hutchinson1989}]\label{lem:hutch}
+Let $\mathbf{A}\in\mathbb{R}^{d\times d}$ and let $\boldsymbol{\varepsilon}$ be a random vector in $\mathbb{R}^d$ with $\mathbb{E}\left[\boldsymbol{\varepsilon}\boldsymbol{\varepsilon}^\top\right]=\mathbf{I}_d$. Then
+\[
+\mathbb{E}\left[\boldsymbol{\varepsilon}^\top\mathbf{A}\boldsymbol{\varepsilon}\right]=\operatorname{tr}\mathbf{A} .
+\]
+\end{lemma}
+
+\begin{proof}
+Write the quadratic form out in coordinates:
+\[
+\boldsymbol{\varepsilon}^\top\mathbf{A}\boldsymbol{\varepsilon}=\sum_{i,j=1}^d A_{ij}\,\varepsilon_i\varepsilon_j .
+\]
+The condition $\mathbb{E}[\boldsymbol{\varepsilon}\boldsymbol{\varepsilon}^\top]=\mathbf{I}_d$ says exactly that $\mathbb{E}[\varepsilon_i\varepsilon_j]=\delta_{ij}$, where $\delta_{ij}$ is the Kronecker delta. Taking expectations and using linearity,
+\[
+\mathbb{E}\left[\boldsymbol{\varepsilon}^\top\mathbf{A}\boldsymbol{\varepsilon}\right]=\sum_{i,j=1}^d A_{ij}\,\mathbb{E}[\varepsilon_i\varepsilon_j]=\sum_{i,j=1}^d A_{ij}\,\delta_{ij}=\sum_{i=1}^d A_{ii}=\operatorname{tr}\mathbf{A} . \qedhere
+\]
+\end{proof}
+
+\newpage
+
+\section{The view from a fixed point: the continuity equation}\label{sec:continuity}
+
+\paragraph{General description.} In the previous section we followed individual particles. Here we change viewpoint: we fix a point of space and watch the density there. Conservation of probability then gives the \emph{continuity equation} \citep{villani2009,ambrosio2008}
+\[
+\partial_t p_t + \nabla\cdot\left(p_t\mathbf{v}_t\right) = 0,
+\]
+which links a velocity field to the densities it generates without mentioning trajectories.
+
+First, recall what the previous section gave us. It told us what happens if we \textbf{already have} a velocity field: simulate it, and the density follows. The problem is that we \textbf{do not have} such a velocity field. The plan is therefore to first pick a path of densities from $p_0$ to $p_1$ that we can sample from, and then find a velocity field that moves probability along that path.
+
+For this, we need to answer the question ``does this velocity field produce these densities?'' without simulating anything. Following particles cannot answer it, because it requires the very trajectories we cannot yet compute.
+
+\subsection{A first proof of the continuity equation}
+
+\begin{theorem}[Continuity equation; \citealp{ambrosio2008}]\label{thm:ce}
+Let $p_t$ be the density generated by the velocity field $\mathbf{v}$ from $p_0$. Then, for all $t\in[0,1]$ and $\mathbf{x}\in\mathbb{R}^d$,
+\begin{equation}\label{eq:ce}
+\partial_t p_t(\mathbf{x}) + \nabla\cdot\left(p_t\mathbf{v}_t\right)(\mathbf{x}) = 0 .
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+We combine the particle (Lagrangian) description of Proposition~\ref{prop:icov} with the chain rule. Fix $\mathbf{x}_0\in\mathbb{R}^d$ and write $\mathbf{x}_t=\boldsymbol{\phi}_t(\mathbf{x}_0)$ for its trajectory, so that $\dot{\mathbf{x}}_t=\mathbf{v}_t(\mathbf{x}_t)$.
+
+\paragraph{Along the trajectory.} By Proposition~\ref{prop:icov},
+\[
+\frac{\mathrm{d}}{\mathrm{d}t}\log p_t(\mathbf{x}_t) = -\left(\nabla\cdot\mathbf{v}_t\right)(\mathbf{x}_t).
+\]
+Since $p_t(\mathbf{x}_t)>0$, the left-hand side equals $\frac{1}{p_t(\mathbf{x}_t)}\frac{\mathrm{d}}{\mathrm{d}t}p_t(\mathbf{x}_t)$. Multiplying through by $p_t(\mathbf{x}_t)$ gives
+\begin{equation}\label{eq:ce-lagr}
+\frac{\mathrm{d}}{\mathrm{d}t}p_t(\mathbf{x}_t) = -p_t(\mathbf{x}_t)\left(\nabla\cdot\mathbf{v}_t\right)(\mathbf{x}_t).
+\end{equation}
+
+\paragraph{The chain rule.} The quantity $p_t(\mathbf{x}_t)$ depends on $t$ in two ways: directly through the time slot, and through the position $\mathbf{x}_t$. To see how the two effects combine, take any continuously differentiable $f(t,\mathbf{x})$ and set $G(t)=f(t,\mathbf{x}_t)$. For small $h$, add and subtract $f(t,\mathbf{x}_{t+h})$:
+\[
+G(t+h)-G(t)
+= \underbrace{\big[f(t+h,\mathbf{x}_{t+h})-f(t,\mathbf{x}_{t+h})\big]}_{\text{time changes, position held}}
++ \underbrace{\big[f(t,\mathbf{x}_{t+h})-f(t,\mathbf{x}_t)\big]}_{\text{position changes, time held}} .
+\]
+To first order in $h$:
+\begin{itemize}
+\item The first bracket is $h\,\partial_t f(t,\mathbf{x}_t)+o(h)$. This uses the continuity of $\partial_t f$, since the bracket is evaluated at $\mathbf{x}_{t+h}$ rather than $\mathbf{x}_t$.
+\item The second bracket is $\nabla f(t,\mathbf{x}_t)\cdot h\,\dot{\mathbf{x}}_t+o(h)$. This holds because $\mathbf{x}_{t+h}-\mathbf{x}_t=h\,\dot{\mathbf{x}}_t+o(h)$, and $f(t,\cdot)$ is differentiable in $\mathbf{x}$.
+\end{itemize}
+Dividing by $h$ and letting $h\to0$,
+\[
+G'(t) = \partial_t f(t,\mathbf{x}_t) + \nabla f(t,\mathbf{x}_t)\cdot\dot{\mathbf{x}}_t .
+\]
+Applying this to $f=p$ and using $\dot{\mathbf{x}}_t=\mathbf{v}_t(\mathbf{x}_t)$,
+\begin{equation}\label{eq:ce-chain}
+\frac{\mathrm{d}}{\mathrm{d}t}p_t(\mathbf{x}_t) = \left(\partial_t p_t\right)(\mathbf{x}_t) + \nabla p_t(\mathbf{x}_t)\cdot\mathbf{v}_t(\mathbf{x}_t).
+\end{equation}
+
+\paragraph{Combining.} Equating \eqref{eq:ce-lagr} and \eqref{eq:ce-chain} gives, at the point $\mathbf{x}_t$,
+\[
+\partial_t p_t + \nabla p_t\cdot\mathbf{v}_t + p_t\,\nabla\cdot\mathbf{v}_t = 0 .
+\]
+By the product rule $\nabla\cdot(p\,\mathbf{v})=\nabla p\cdot\mathbf{v}+p\,\nabla\cdot\mathbf{v}$, this is
+\[
+\partial_t p_t(\mathbf{x}_t) + \nabla\cdot\left(p_t\mathbf{v}_t\right)(\mathbf{x}_t) = 0 .
+\]
+
+\paragraph{From trajectories to every point.} So far the equation holds only at points lying on a trajectory. But $\boldsymbol{\phi}_t$ is invertible, so every $\mathbf{x}\in\mathbb{R}^d$ is $\boldsymbol{\phi}_t(\mathbf{x}_0)$ for the starting point $\mathbf{x}_0=\boldsymbol{\phi}_t^{-1}(\mathbf{x})$. Hence \eqref{eq:ce} holds for every $\mathbf{x}$ and every $t$.
+\end{proof}
+
+\begin{theorem}[Uniqueness; \citealp{ambrosio2008}]\label{thm:unique}
+Let $\mathbf{v}$ be a velocity field and let $(q_t)_{t\in[0,1]}$ be a family of positive functions on $\mathbb{R}^d$, continuously differentiable in both $t$ and $\mathbf{x}$, that solves the continuity equation
+\[
+\partial_t q_t+\nabla\cdot\left(q_t\mathbf{v}_t\right)=0,\qquad q_0=p_0 .
+\]
+Then $q_t=p_t$ for all $t\in[0,1]$, where $p_t$ is the density generated by $\mathbf{v}$ from $p_0$.
+\end{theorem}
+
+\begin{proof}
+We follow the candidate $q_t$ along each trajectory and show that it changes \textbf{exactly} as the true density does. Fix $\mathbf{y}\in\mathbb{R}^d$, write $\mathbf{x}_t=\boldsymbol{\phi}_t(\mathbf{y})$ for the trajectory through $(0,\mathbf{y})$, and let $\mathbf{M}_t=\mathbf{J}_{\boldsymbol{\phi}_t}(\mathbf{y})$ be the Jacobian of the flow map. Consider the scalar function
+\[
+g(t):=q_t(\mathbf{x}_t)\,\det\mathbf{M}_t,\qquad t\in[0,1].
+\]
+It is the value of $q_t$ along the trajectory times the factor by which the flow has stretched volumes around it. We show that $g$ is constant. By the product rule,
+\[
+g'(t)=\left[\frac{\mathrm{d}}{\mathrm{d}t}q_t(\mathbf{x}_t)\right]\det\mathbf{M}_t+q_t(\mathbf{x}_t)\,\frac{\mathrm{d}}{\mathrm{d}t}\det\mathbf{M}_t .
+\]
+\begin{itemize}
+\item The first derivative is given by the chain rule, exactly as in the proof of Theorem~\ref{thm:ce}:
+\[
+\frac{\mathrm{d}}{\mathrm{d}t}q_t(\mathbf{x}_t)=\left(\partial_t q_t\right)(\mathbf{x}_t)+\nabla q_t(\mathbf{x}_t)\cdot\mathbf{v}_t(\mathbf{x}_t).
+\]
+\item The second is given by Jacobi's formula (Proposition~\ref{prop:jacobiflow}), together with $\operatorname{tr}\mathbf{A}_t=(\nabla\cdot\mathbf{v}_t)(\mathbf{x}_t)$:
+\[
+\frac{\mathrm{d}}{\mathrm{d}t}\det\mathbf{M}_t=\left(\nabla\cdot\mathbf{v}_t\right)(\mathbf{x}_t)\,\det\mathbf{M}_t .
+\]
+\end{itemize}
+Substituting both, and using the product rule $\nabla q\cdot\mathbf{v}+q\,\nabla\cdot\mathbf{v}=\nabla\cdot(q\,\mathbf{v})$,
+\[
+g'(t)=\Big[\partial_t q_t+\nabla q_t\cdot\mathbf{v}_t+q_t\,\nabla\cdot\mathbf{v}_t\Big](\mathbf{x}_t)\,\det\mathbf{M}_t
+=\Big[\partial_t q_t+\nabla\cdot\left(q_t\mathbf{v}_t\right)\Big](\mathbf{x}_t)\,\det\mathbf{M}_t=0,
+\]
+because $q$ solves the continuity equation. Hence $g$ is constant, and
+\[
+g(t)=g(0)=q_0(\mathbf{y})\det\mathbf{I}_d=p_0(\mathbf{y}).
+\]
+Since $\det\mathbf{M}_t>0$ (proof of Proposition~\ref{prop:icov}), we may divide:
+\[
+q_t(\mathbf{x}_t)=\frac{p_0(\mathbf{y})}{\det\mathbf{M}_t} .
+\]
+The right-hand side is exactly the change of variables formula (Theorem~\ref{thm:cov}) for $p_t$ at $\mathbf{x}_t=\boldsymbol{\phi}_t(\mathbf{y})$, so $q_t(\mathbf{x}_t)=p_t(\mathbf{x}_t)$. Finally, $\boldsymbol{\phi}_t$ is invertible, so every $\mathbf{x}\in\mathbb{R}^d$ equals $\boldsymbol{\phi}_t(\mathbf{y})$ for $\mathbf{y}=\boldsymbol{\phi}_t^{-1}(\mathbf{x})$. Hence $q_t=p_t$ on all of $\mathbb{R}^d$, for every $t\in[0,1]$.
+\end{proof}
+
+\paragraph{What uniqueness does.} For a fixed velocity field $\mathbf{v}$, the continuity equation together with the starting density $p_0$ pins down a single family of densities. There is \textbf{only one} solution, and it is exactly the one the ODE produces.
+
+We will use this result backwards:
+\begin{enumerate}
+\item Pick a path of densities $q_t$ from $q_0=p_0$ to $q_1=p_1$ that we can sample from. This is done in the next section.
+\item Find \textbf{any} velocity field $\mathbf{v}$ such that $(q_t,\mathbf{v}_t)$ satisfies the continuity equation.
+\item By Theorem~\ref{thm:unique}, the ODE driven by $\mathbf{v}$ and started from $p_0$ produces exactly $q_t$ at every time, and in particular ends at $q_1=p_1$.
+\end{enumerate}
+Checking a single equation therefore replaces simulating trajectories. Without Theorem~\ref{thm:unique}, the continuity equation would only be a necessary condition, and a path could pass the test while the ODE went somewhere else.
+
+\begin{remark}[The velocity field is not unique]\label{rem:nonunique}
+Uniqueness runs in one direction only: a velocity field determines its path, but a path does not determine its velocity field. Suppose $(q_t,\mathbf{v}_t)$ satisfies the continuity equation, and let $\mathbf{b}_t$ be any vector field with $\nabla\cdot\mathbf{b}_t=0$ for all $t$. Then
+\[
+\nabla\cdot\left(q_t\left(\mathbf{v}_t+\tfrac{1}{q_t}\mathbf{b}_t\right)\right)=\nabla\cdot\left(q_t\mathbf{v}_t\right)+\nabla\cdot\mathbf{b}_t=\nabla\cdot\left(q_t\mathbf{v}_t\right),
+\]
+so $(q_t,\mathbf{v}_t+\mathbf{b}_t/q_t)$ satisfies it too. The extra flux $\mathbf{b}_t$ moves probability around without piling it up or draining it anywhere, so the density is unchanged even though the particles move differently. Step~2 above therefore has many valid answers, and we are free to choose a convenient one.
+\end{remark}
+
+\newpage
+
+\section{Stochastic interpolants}\label{sec:interp}
+
+\paragraph{General description.} Following the strategy laid out in the last section, we pair each base sample with a data sample and join the two by a curve \citep{albergo2023building,albergo2023stochastic}. At each time $t$, the points on these curves form a cloud whose density $p_t$ runs exactly from $p_0$ to $p_1$, and a sample of $p_t$ costs one function evaluation. We derive a formula for $p_t$ and, later, the velocity field that moves probability along this path.
+
+\begin{definition}[Coupling; \citealp{villani2009}]\label{def:coupling}
+A \emph{coupling} of $p_0$ and $p_1$ is a probability distribution $\gamma$ on $\mathbb{R}^d\times\mathbb{R}^d$ such that, if $(\mathbf{x}_0,\mathbf{x}_1)\sim\gamma$, then $\mathbf{x}_0\sim p_0$ and $\mathbf{x}_1\sim p_1$. The \emph{independent coupling} is $\gamma=p_0\otimes p_1$, with density $\gamma(\mathbf{x}_0,\mathbf{x}_1)=p_0(\mathbf{x}_0)\,p_1(\mathbf{x}_1)$.
+\end{definition}
+
+\begin{definition}[Interpolant; \citealp{albergo2023building}]\label{def:interpolant}
+An \emph{interpolant} is a map $\mathbf{I}:[0,1]\times\mathbb{R}^d\times\mathbb{R}^d\to\mathbb{R}^d$, $(t,\mathbf{x}_0,\mathbf{x}_1)\mapsto\mathbf{I}(t,\mathbf{x}_0,\mathbf{x}_1)$, that is differentiable in $t$ and satisfies
+\[
+\mathbf{I}(0,\mathbf{x}_0,\mathbf{x}_1)=\mathbf{x}_0,\qquad\mathbf{I}(1,\mathbf{x}_0,\mathbf{x}_1)=\mathbf{x}_1\qquad\text{for all }\mathbf{x}_0,\mathbf{x}_1\in\mathbb{R}^d .
+\]
+Its time derivative is denoted $\partial_t\mathbf{I}(t,\mathbf{x}_0,\mathbf{x}_1)\in\mathbb{R}^d$. In words: for each pair of endpoints, $\mathbf{I}$ is a curve in time that starts at $\mathbf{x}_0$ and ends at $\mathbf{x}_1$.
+\end{definition}
+
+\begin{definition}[Stochastic interpolant; \citealp{albergo2023stochastic}]\label{def:si}
+Given a coupling $\gamma$ and an interpolant $\mathbf{I}$, draw $(\mathbf{x}_0,\mathbf{x}_1)\sim\gamma$ and set
+\[
+\mathbf{x}_t:=\mathbf{I}(t,\mathbf{x}_0,\mathbf{x}_1),\qquad t\in[0,1].
+\]
+The randomness comes only from the draw of the endpoints. We denote by $p_t$ the density of $\mathbf{x}_t$, which we assume to be positive and continuously differentiable in both $t$ and $\mathbf{x}$.
+\end{definition}
+
+Since $\mathbf{x}_{t=0}=\mathbf{x}_0\sim p_0$ and $\mathbf{x}_{t=1}=\mathbf{x}_1\sim p_1$, the path has the correct endpoints for every interpolant and every coupling. More generally, one can take $\mathbf{I}(t,\mathbf{x}_0,\mathbf{x}_1)=\alpha_t\mathbf{x}_0+\beta_t\mathbf{x}_1$ for any differentiable functions $\alpha,\beta:[0,1]\to\mathbb{R}$ with $\alpha_0=\beta_1=1$ and $\alpha_1=\beta_0=0$. Throughout these notes we mostly work with the \emph{linear interpolant} \citep{liu2023,lipman2023} $\mathbf{I}(t,\mathbf{x}_0,\mathbf{x}_1)=(1-t)\mathbf{x}_0+t\mathbf{x}_1$, whose time derivative is $\partial_t\mathbf{I}=\mathbf{x}_1-\mathbf{x}_0$. We now look at what its density looks like.
+
+\begin{proposition}[Density of the linear interpolant]\label{prop:lineardensity}
+For the linear interpolant with the independent coupling and $t\in(0,1]$,
+\[
+p_t(\mathbf{x})=\int_{\mathbb{R}^d}p_0(\mathbf{z})\,\frac{1}{t^d}\,p_1\left(\frac{\mathbf{x}-(1-t)\mathbf{z}}{t}\right)\mathrm{d}\mathbf{z} .
+\]
+\end{proposition}
+
+\begin{proof}
+Condition on $\mathbf{x}_0=\mathbf{z}$. Since $\mathbf{x}_1$ is independent of $\mathbf{x}_0$, given $\mathbf{x}_0=\mathbf{z}$ the vector $\mathbf{x}_t=(1-t)\mathbf{z}+t\mathbf{x}_1$ is the image of $\mathbf{x}_1\sim p_1$ under the map
+\[
+\mathbf{g}_{\mathbf{z}}(\mathbf{y})=(1-t)\mathbf{z}+t\mathbf{y}.
+\]
+For $t>0$ this map is invertible, with Jacobian $t\mathbf{I}_d$, determinant $t^d$, and inverse $\mathbf{g}_{\mathbf{z}}^{-1}(\mathbf{x})=(\mathbf{x}-(1-t)\mathbf{z})/t$. By the change of variables formula (Theorem~\ref{thm:cov}), the conditional density of $\mathbf{x}_t$ given $\mathbf{x}_0=\mathbf{z}$ is
+\[
+p_t(\mathbf{x}\mid\mathbf{x}_0=\mathbf{z})=\frac{1}{t^d}\,p_1\left(\frac{\mathbf{x}-(1-t)\mathbf{z}}{t}\right).
+\]
+Averaging over $\mathbf{z}\sim p_0$ (marginalisation, $p_t(\mathbf{x})=\int p_0(\mathbf{z})\,p_t(\mathbf{x}\mid\mathbf{x}_0=\mathbf{z})\,\mathrm{d}\mathbf{z}$) gives the result.
+\end{proof}
+
+The issue with this formula is twofold: it requires $p_1$ in closed form, whereas we only have samples from it, and it is an integral over all of $\mathbb{R}^d$, which is hopeless to compute in high dimension. Sampling, on the other hand, needs neither: draw a pair and evaluate $\mathbf{I}$.
+
+The continuity equation requires $\partial_t p_t$, but $p_t$ has no usable formula. We get around this by writing $p_t$ as an average over pairs, so that all the time dependence sits inside the known positions $\mathbf{I}(t,\mathbf{x}_0,\mathbf{x}_1)$.
+
+\begin{proposition}[Density as an average of spikes; \citealp{albergo2023stochastic}]\label{prop:deltadensity}
+For every $t\in[0,1]$ and $\mathbf{x}\in\mathbb{R}^d$,
+\[
+p_t(\mathbf{x})=\mathbb{E}\left[\delta\left(\mathbf{x}-\mathbf{I}(t,\mathbf{x}_0,\mathbf{x}_1)\right)\right],
+\]
+where the expectation is over $(\mathbf{x}_0,\mathbf{x}_1)\sim\gamma$.
+\end{proposition}
+
+\begin{proof}
+The Dirac delta has the sifting property: for any continuous $g$ and any $\mathbf{a}\in\mathbb{R}^d$, $\int g(\mathbf{y})\,\delta(\mathbf{y}-\mathbf{a})\,\mathrm{d}\mathbf{y}=g(\mathbf{a})$. The random vector $\mathbf{x}_t=\mathbf{I}(t,\mathbf{x}_0,\mathbf{x}_1)$ has density $p_t$, so the expectation of any function of $\mathbf{x}_t$ is its integral against $p_t$. Applying this to the function $\mathbf{y}\mapsto\delta(\mathbf{x}-\mathbf{y})$, with $\mathbf{x}$ held fixed,
+\[
+\mathbb{E}\left[\delta(\mathbf{x}-\mathbf{x}_t)\right]=\int_{\mathbb{R}^d}\delta(\mathbf{x}-\mathbf{y})\,p_t(\mathbf{y})\,\mathrm{d}\mathbf{y}=p_t(\mathbf{x}),
+\]
+by the sifting property (the delta is symmetric, $\delta(\mathbf{x}-\mathbf{y})=\delta(\mathbf{y}-\mathbf{x})$).
+\end{proof}
+
+Read the formula as a histogram of the cloud: each pair places a spike of unit mass at its current position $\mathbf{I}(t,\mathbf{x}_0,\mathbf{x}_1)$, and averaging the spikes over all pairs gives the density. As $t$ changes, each spike moves with the known velocity $\partial_t\mathbf{I}$, which is what lets us differentiate $p_t$ in time.
+
+\newpage
+
+\section{Finding the velocity field}\label{sec:velocity}
+
+\paragraph{General description.} In the previous section we chose the linear interpolant, whose curves are straight lines. These lines turn noise into data only if each point knows which data point its line ends at. A generator cannot know this: it starts from noise and may only use $(t,\mathbf{x})$. Through any given location pass many lines, heading for different data points with different velocities, and a field must give one answer for all of them. Trained by least squares, a network gives their average. This section explains why following that average still turns noise into data. The argument follows \citet{albergo2023building}; see also \citet{lipman2023} and \citet{liu2023}.
+
+\paragraph{The problem.} With the linear interpolant $\mathbf{x}_t=(1-t)\mathbf{x}_0+t\mathbf{x}_1$, each pair runs from noise to data with constant velocity $\mathbf{x}_1-\mathbf{x}_0$. If every particle could follow its own line, noise would turn into data perfectly. However, to generate a new sample we draw noise $\mathbf{x}_0\sim p_0$ and move it; there is no $\mathbf{x}_1$, since that is exactly what we are trying to produce. The instructions of a generator must therefore have the form ``at location $\mathbf{x}$ and time $t$, move with velocity $\mathbf{v}_t(\mathbf{x})$''.
+
+Furthermore, several lines pass through any given location $\mathbf{x}$, and they are headed for different data points. A velocity field gives exactly one velocity per location. So at every location there are many candidate velocities, and we must produce precisely one.
+
+\paragraph{What least squares does.} Suppose we train a network $\mathbf{v}_\theta(\mathbf{x},t)$ by least squares to predict each pair's velocity from its position: the input is $(\mathbf{x}_t,t)$ and the label is $\mathbf{x}_1-\mathbf{x}_0$. Pairs at the same location have the same input but different labels, and the network can output only one value. Under squared error, the best single value is the average of the labels (this is proved later). The average velocity of the lines passing through $\mathbf{x}$ at time $t$ is
+\[
+\mathbf{v}_t(\mathbf{x})=\mathbb{E}\left[\mathbf{x}_1-\mathbf{x}_0\mid\mathbf{x}_t=\mathbf{x}\right],
+\]
+the expected velocity of a pair, given that its position at time $t$ is $\mathbf{x}$. To work with this object we need conditional expectations.
+
+\begin{definition}[Conditional expectation]\label{def:condexp}
+Let $\mathbf{X}\in\mathbb{R}^{d_X}$ and $\mathbf{Y}\in\mathbb{R}^{d_Y}$ be random vectors with joint density $p(\mathbf{x},\mathbf{y})$, and let $p(\mathbf{x})=\int p(\mathbf{x},\mathbf{y})\,\mathrm{d}\mathbf{y}$ be the density of $\mathbf{X}$. For $\mathbf{x}$ with $p(\mathbf{x})>0$, the conditional density is $p(\mathbf{y}\mid\mathbf{x})=p(\mathbf{x},\mathbf{y})/p(\mathbf{x})$, and the \emph{conditional expectation} is
+\[
+\mathbb{E}\left[\mathbf{Y}\mid\mathbf{X}=\mathbf{x}\right]:=\int\mathbf{y}\,p(\mathbf{y}\mid\mathbf{x})\,\mathrm{d}\mathbf{y}.
+\]
+In words: keep only the outcomes with $\mathbf{X}=\mathbf{x}$, and average $\mathbf{Y}$ over them.
+\end{definition}
+
+\begin{lemma}[Delta form of conditional expectation]\label{lem:deltacond}
+With the notation of Definition~\ref{def:condexp}, let $\mathbf{g}(\mathbf{x})=\mathbb{E}[\mathbf{Y}\mid\mathbf{X}=\mathbf{x}]$. Then
+\[
+\mathbb{E}\left[\mathbf{Y}\,\delta(\mathbf{x}-\mathbf{X})\right]=p(\mathbf{x})\,\mathbf{g}(\mathbf{x}).
+\]
+\end{lemma}
+
+\begin{proof}
+The delta keeps only the slice $\mathbf{X}=\mathbf{x}$. Writing the expectation as an integral against the joint density and using the sifting property in $\mathbf{x}'$,
+\[
+\mathbb{E}\left[\mathbf{Y}\,\delta(\mathbf{x}-\mathbf{X})\right]
+=\iint\mathbf{y}\,\delta(\mathbf{x}-\mathbf{x}')\,p(\mathbf{x}',\mathbf{y})\,\mathrm{d}\mathbf{x}'\,\mathrm{d}\mathbf{y}
+=\int\mathbf{y}\,p(\mathbf{x},\mathbf{y})\,\mathrm{d}\mathbf{y}.
+\]
+Since $p(\mathbf{x},\mathbf{y})=p(\mathbf{y}\mid\mathbf{x})\,p(\mathbf{x})$ and $p(\mathbf{x})$ does not depend on $\mathbf{y}$,
+\[
+\int\mathbf{y}\,p(\mathbf{x},\mathbf{y})\,\mathrm{d}\mathbf{y}=p(\mathbf{x})\int\mathbf{y}\,p(\mathbf{y}\mid\mathbf{x})\,\mathrm{d}\mathbf{y}=p(\mathbf{x})\,\mathbf{g}(\mathbf{x}). \qedhere
+\]
+\end{proof}
+
+\begin{definition}[Velocity field of a stochastic interpolant; \citealp{albergo2023building}]\label{def:sivelocity}
+For a stochastic interpolant, $t\in[0,1]$ and $\mathbf{x}\in\mathbb{R}^d$, the \emph{velocity field} is
+\[
+\mathbf{v}_t(\mathbf{x}):=\mathbb{E}\left[\partial_t\mathbf{I}(t,\mathbf{x}_0,\mathbf{x}_1)\mid\mathbf{x}_t=\mathbf{x}\right].
+\]
+For the linear interpolant, $\partial_t\mathbf{I}=\mathbf{x}_1-\mathbf{x}_0$, and this reduces to the average velocity above.
+\end{definition}
+
+We now show that this averaged velocity really transports $p_0$ to $p_1$.
+
+\begin{theorem}[Density transport via stochastic interpolants; \citealp{albergo2023building,albergo2023stochastic}]\label{thm:interp}
+Let $(p_t)$ and $\mathbf{v}$ be the densities and the velocity field of a stochastic interpolant, and assume $\mathbf{v}$ is a velocity field in the sense of Definition~\ref{def:vfield}. Then:
+\begin{enumerate}[label=(\roman*)]
+\item $(p_t,\mathbf{v}_t)$ satisfies the continuity equation \eqref{eq:ce};
+\item if $\mathbf{x}_0\sim p_0$ and $\frac{\mathrm{d}}{\mathrm{d}t}\mathbf{x}_t=\mathbf{v}_t(\mathbf{x}_t)$, then $\mathbf{x}_t\sim p_t$ for every $t\in[0,1]$; in particular $\mathbf{x}_1\sim p_1$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+Fix $\mathbf{x}\in\mathbb{R}^d$ and write $\mathbf{I}_t:=\mathbf{I}(t,\mathbf{x}_0,\mathbf{x}_1)$ for the position of one sample. By Proposition~\ref{prop:deltadensity}, $p_t(\mathbf{x})=\mathbb{E}[\delta(\mathbf{x}-\mathbf{I}_t)]$.
+
+\paragraph{One spike.} For a fixed pair, the spike $\delta(\mathbf{x}-\mathbf{I}_t)$ depends on $t$ only through $\mathbf{I}_t$. By the chain rule,
+\[
+\partial_t\,\delta(\mathbf{x}-\mathbf{I}_t)=\frac{\partial\,\delta(\mathbf{x}-\mathbf{I}_t)}{\partial\mathbf{I}_t}\cdot\frac{\partial\mathbf{I}_t}{\partial t}=-\nabla\delta(\mathbf{x}-\mathbf{I}_t)\cdot\partial_t\mathbf{I}_t ,
+\]
+where the minus sign appears because $\mathbf{I}_t$ enters the delta as $\mathbf{x}-\mathbf{I}_t$. Because $\partial_t\mathbf{I}_t$ does not depend on $\mathbf{x}$, it passes through the divergence, so we may write
+\[
+\partial_t\,\delta(\mathbf{x}-\mathbf{I}_t)=-\nabla_{\mathbf{x}}\cdot\left[\partial_t\mathbf{I}_t\,\delta(\mathbf{x}-\mathbf{I}_t)\right].
+\]
+This is the continuity equation of a single particle: its ``density'' is a spike at $\mathbf{I}_t$, and its flux is the spike carried at its velocity.
+
+\paragraph{Average over pairs.} Take the expectation over pairs and exchange it with the derivatives in $t$ and $\mathbf{x}$. Using $p_t(\mathbf{x})=\mathbb{E}[\delta(\mathbf{x}-\mathbf{I}_t)]$,
+\[
+\partial_t p_t(\mathbf{x})=-\nabla\cdot\mathbb{E}\left[\partial_t\mathbf{I}_t\,\delta(\mathbf{x}-\mathbf{x}_t)\right].
+\]
+
+\paragraph{Identify the flux.} Apply Lemma~\ref{lem:deltacond} with $\mathbf{X}=\mathbf{x}_t$ (density $p_t$) and $\mathbf{Y}=\partial_t\mathbf{I}_t$:
+\[
+\mathbb{E}\left[\partial_t\mathbf{I}_t\,\delta(\mathbf{x}-\mathbf{x}_t)\right]=p_t(\mathbf{x})\,\mathbb{E}\left[\partial_t\mathbf{I}_t\mid\mathbf{x}_t=\mathbf{x}\right]=p_t(\mathbf{x})\,\mathbf{v}_t(\mathbf{x}).
+\]
+Substituting gives $\partial_t p_t+\nabla\cdot(p_t\mathbf{v}_t)=0$, which is (i).
+
+\paragraph{Transport.} By (i), $(p_t)$ is a positive, continuously differentiable solution of the continuity equation with $\mathbf{v}$, and it starts at $p_0$. By Theorem~\ref{thm:unique}, it equals the density generated by $\mathbf{v}$ from $p_0$, which is (ii).
+\end{proof}
+
+
+\newpage
+
+\section{Learning the velocity field by regression}\label{sec:regression}
+
+\paragraph{General description.} Section~\ref{sec:velocity} told us which velocity field to follow, $\mathbf{v}_t(\mathbf{x})=\mathbb{E}[\partial_t\mathbf{I}\mid\mathbf{x}_t=\mathbf{x}]$, but we cannot compute it: the average runs over all pairs passing through $\mathbf{x}$, and finding them requires $p_1$. This section shows that we never need to compute the average. Regressing a network on the \emph{per-pair} velocities, which are free, makes the network learn the average automatically. This is the principle behind flow matching \citep{lipman2023,liu2023,albergo2023building}.
+
+\subsection{Unbiased targets and the best predictor}
+
+\begin{definition}[Unbiased regression target]\label{def:unbiased}
+Let $\mathbf{x}_t$ be a stochastic interpolant with velocity field $\mathbf{v}$. A random vector $\mathbf{Y}_t\in\mathbb{R}^d$, computed from $t$ and the pair $(\mathbf{x}_0,\mathbf{x}_1)$, is an \emph{unbiased regression target} for $\mathbf{v}$ if
+\[
+\mathbb{E}\left[\mathbf{Y}_t\mid\mathbf{x}_t=\mathbf{x}\right]=\mathbf{v}_t(\mathbf{x})\qquad\text{for all }t\in[0,1]\text{ and }\mathbf{x}\in\mathbb{R}^d .
+\]
+\end{definition}
+
+By Definition~\ref{def:sivelocity}, $\mathbf{Y}_t=\partial_t\mathbf{I}(t,\mathbf{x}_0,\mathbf{x}_1)$ is an unbiased target, and for the linear interpolant this is simply $\mathbf{x}_1-\mathbf{x}_0$. A single target is a noisy, pair-specific velocity; only its conditional average is the field we want. The next theorem shows that least squares extracts exactly this average.
+
+\begin{theorem}[The conditional expectation is the best predictor]\label{thm:bestpred}
+Let $\mathbf{X}\in\mathbb{R}^{d_X}$ and $\mathbf{Y}\in\mathbb{R}^{d_Y}$ be random vectors with joint density $p(\mathbf{x},\mathbf{y})$ and $\mathbb{E}\|\mathbf{Y}\|^2<\infty$, and let $\mathbf{g}^\star(\mathbf{x})=\mathbb{E}[\mathbf{Y}\mid\mathbf{X}=\mathbf{x}]$. Then for every function $\mathbf{g}:\mathbb{R}^{d_X}\to\mathbb{R}^{d_Y}$ with $\mathbb{E}\|\mathbf{g}(\mathbf{X})\|^2<\infty$,
+\[
+\mathbb{E}\left\|\mathbf{Y}-\mathbf{g}(\mathbf{X})\right\|^2=\mathbb{E}\left\|\mathbf{Y}-\mathbf{g}^\star(\mathbf{X})\right\|^2+\mathbb{E}\left\|\mathbf{g}^\star(\mathbf{X})-\mathbf{g}(\mathbf{X})\right\|^2 .
+\]
+In particular, $\mathbf{g}^\star$ minimises the mean squared error, and any other minimiser agrees with $\mathbf{g}^\star$ wherever $p(\mathbf{x})>0$ (up to a set of zero probability).
+\end{theorem}
+
+\begin{proof}
+Add and subtract $\mathbf{g}^\star(\mathbf{X})$ inside the norm and expand the square:
+\[
+\left\|\mathbf{Y}-\mathbf{g}(\mathbf{X})\right\|^2=\left\|\mathbf{Y}-\mathbf{g}^\star(\mathbf{X})\right\|^2+\left\|\mathbf{g}^\star(\mathbf{X})-\mathbf{g}(\mathbf{X})\right\|^2+2\left(\mathbf{Y}-\mathbf{g}^\star(\mathbf{X})\right)\cdot\left(\mathbf{g}^\star(\mathbf{X})-\mathbf{g}(\mathbf{X})\right).
+\]
+It remains to show that the cross term has zero expectation. Write $\mathbf{h}(\mathbf{x}):=\mathbf{g}^\star(\mathbf{x})-\mathbf{g}(\mathbf{x})$, which depends on $\mathbf{x}$ only. Using $p(\mathbf{x},\mathbf{y})=p(\mathbf{x})\,p(\mathbf{y}\mid\mathbf{x})$,
+\[
+\mathbb{E}\left[\left(\mathbf{Y}-\mathbf{g}^\star(\mathbf{X})\right)\cdot\mathbf{h}(\mathbf{X})\right]
+=\int p(\mathbf{x})\,\mathbf{h}(\mathbf{x})\cdot\left[\int\mathbf{y}\,p(\mathbf{y}\mid\mathbf{x})\,\mathrm{d}\mathbf{y}-\mathbf{g}^\star(\mathbf{x})\right]\mathrm{d}\mathbf{x}=0,
+\]
+because the bracket is $\mathbf{g}^\star(\mathbf{x})-\mathbf{g}^\star(\mathbf{x})=\mathbf{0}$ by the definition of conditional expectation. Taking expectations of the expansion gives the identity. The first term on the right does not depend on $\mathbf{g}$ and the second is non-negative, so the error is smallest exactly when $\mathbf{g}=\mathbf{g}^\star$ on the region where $\mathbf{X}$ has positive density.
+\end{proof}
+
+In words: among all predictors that see only $\mathbf{X}$, the best one under squared error outputs, at each $\mathbf{x}$, the average of the labels $\mathbf{Y}$ that occur with that $\mathbf{x}$. The first term is the \emph{irreducible error}: the spread of the labels around their average, which no predictor can remove.
+
+\subsection{The flow matching loss}
+
+Take a network $\mathbf{v}_\theta(\mathbf{x},t)$ and the time $t$ uniform on $[0,1]$, independent of the pair. The \emph{flow matching loss} \citep{lipman2023,liu2023,albergo2023building} is
+\[
+\mathcal{L}(\theta)=\mathbb{E}_{t\sim\mathcal{U}[0,1]}\,\mathbb{E}_{(\mathbf{x}_0,\mathbf{x}_1)\sim\gamma}\left\|\mathbf{v}_\theta(\mathbf{x}_t,t)-\partial_t\mathbf{I}(t,\mathbf{x}_0,\mathbf{x}_1)\right\|^2,\qquad\mathbf{x}_t=\mathbf{I}(t,\mathbf{x}_0,\mathbf{x}_1).
+\]
+For the linear interpolant the target is $\mathbf{x}_1-\mathbf{x}_0$. Every quantity in the loss can be computed from a sampled pair and a sampled time; the unknown field $\mathbf{v}_t$ appears nowhere.
+
+\paragraph{Expectations versus integrals over time.} Losses in the literature are often written as integrals over time rather than expectations. The two are the same object. If $t$ has density $p(t)$ on $[0,1]$, then $\mathbb{E}_t[f(t)]=\int_0^1 f(t)\,p(t)\,\mathrm{d}t$, and for the uniform distribution $p(t)=1$, so
+\[
+\mathbb{E}_{t\sim\mathcal{U}[0,1]}\left[f(t)\right]=\int_0^1 f(t)\,\mathrm{d}t .
+\]
+A non-uniform time distribution simply acts as a weighting $p(t)$ inside the integral. Likewise, for two times drawn uniformly on the triangle $\{0\le t<s\le1\}$, whose area is $\tfrac12$ and hence whose density is $2$,
+\[
+\mathbb{E}_{t<s}\left[f(t,s)\right]=2\int_0^1\!\!\int_t^1 f(t,s)\,\mathrm{d}s\,\mathrm{d}t ,
+\]
+which differs from the plain double integral only by a constant factor and so has the same minimisers. Throughout these notes we write every loss as an expectation, because that is also how it is computed: sample the times and the pair, evaluate the squared error, and average over a minibatch.
+
+
+\begin{proposition}[Decomposition of the flow matching loss; cf.\ \citealp{lipman2023}]\label{prop:fmsplit}
+Assume $\mathbb{E}\|\partial_t\mathbf{I}\|^2<\infty$. Then
+\[
+\mathcal{L}(\theta)=\underbrace{\mathbb{E}_{t}\,\mathbb{E}\left\|\mathbf{v}_\theta(\mathbf{x}_t,t)-\mathbf{v}_t(\mathbf{x}_t)\right\|^2}_{\text{depends on }\theta}+\underbrace{\mathbb{E}_{t}\,\mathbb{E}\left\|\partial_t\mathbf{I}-\mathbf{v}_t(\mathbf{x}_t)\right\|^2}_{\text{independent of }\theta} .
+\]
+Consequently, the minimisers of $\mathcal{L}$ are exactly the networks with $\mathbf{v}_\theta(\cdot,t)=\mathbf{v}_t$ wherever $p_t>0$, for almost every $t$.
+\end{proposition}
+
+\begin{proof}
+Fix $t$ and apply Theorem~\ref{thm:bestpred} with $\mathbf{X}=\mathbf{x}_t$, $\mathbf{Y}=\partial_t\mathbf{I}$ and $\mathbf{g}=\mathbf{v}_\theta(\cdot,t)$. Since $\partial_t\mathbf{I}$ is an unbiased target, $\mathbf{g}^\star=\mathbf{v}_t$, so
+\[
+\mathbb{E}\left\|\mathbf{v}_\theta(\mathbf{x}_t,t)-\partial_t\mathbf{I}\right\|^2=\mathbb{E}\left\|\mathbf{v}_\theta(\mathbf{x}_t,t)-\mathbf{v}_t(\mathbf{x}_t)\right\|^2+\mathbb{E}\left\|\partial_t\mathbf{I}-\mathbf{v}_t(\mathbf{x}_t)\right\|^2 .
+\]
+Averaging over $t\sim\mathcal{U}[0,1]$ gives the decomposition. The second term does not involve $\theta$, so minimising $\mathcal{L}$ is the same as minimising the first term, which is zero exactly when $\mathbf{v}_\theta(\cdot,t)=\mathbf{v}_t$ on the region where $p_t>0$, for almost every $t$.
+\end{proof}
+
+Two consequences are worth stating.
+\begin{itemize}
+\item \emph{The gradients are the right ones.} Since the second term is constant in $\theta$, $\nabla_\theta\mathcal{L}$ equals the gradient of the distance to the true field. Training on noisy per-pair targets is, in expectation, the same as training on the unknown $\mathbf{v}_t$ itself.
+\item \emph{The loss does not go to zero.} At the optimum the loss equals the second term, the spread of the per-pair velocities around their average. Its value therefore says little about how well the field has been learned; only the first term does, and it cannot be observed directly.
+\end{itemize}
+
+\subsection{The algorithm}
+
+Training follows the loss directly: sample a minibatch of pairs and times, form the interpolated points and targets, and take a gradient step. Sampling integrates the learned ODE from noise with a numerical solver; the simplest is Euler's method with $K$ steps of size $h=1/K$, whose global error is $O(h)$ for a Lipschitz field.
+
+\begin{algorithm}[htbp]
+\caption{Flow matching: training}\label{alg:fmtrain}
+\begin{algorithmic}[1]
+\Repeat
+\State Sample a minibatch $\{(\mathbf{x}_0^{(b)},\mathbf{x}_1^{(b)})\}_{b=1}^B\sim\gamma$ and times $t^{(b)}\sim\mathcal{U}[0,1]$
+\State $\mathbf{x}_t^{(b)}\gets\mathbf{I}(t^{(b)},\mathbf{x}_0^{(b)},\mathbf{x}_1^{(b)})$ \Comment{linear: $(1-t^{(b)})\mathbf{x}_0^{(b)}+t^{(b)}\mathbf{x}_1^{(b)}$}
+\State $\mathbf{y}^{(b)}\gets\partial_t\mathbf{I}(t^{(b)},\mathbf{x}_0^{(b)},\mathbf{x}_1^{(b)})$ \Comment{linear: $\mathbf{x}_1^{(b)}-\mathbf{x}_0^{(b)}$}
+\State $\hat{\mathcal{L}}(\theta)\gets\frac{1}{B}\sum_{b=1}^B\left\|\mathbf{v}_\theta(\mathbf{x}_t^{(b)},t^{(b)})-\mathbf{y}^{(b)}\right\|^2$
+\State Update $\theta$ with a gradient step on $\hat{\mathcal{L}}(\theta)$
+\Until{converged}
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[htbp]
+\caption{Flow matching: sampling with Euler's method}\label{alg:fmsample}
+\begin{algorithmic}[1]
+\State Sample $\mathbf{x}\sim p_0$; set $h\gets1/K$
+\For{$k=0,\dots,K-1$}
+\State $\mathbf{x}\gets\mathbf{x}+h\,\mathbf{v}_\theta(\mathbf{x},kh)$
+\EndFor
+\State \Return $\mathbf{x}$ \Comment{approximately distributed as $p_1$}
+\end{algorithmic}
+\end{algorithm}
+
+The cost of sampling is $K$ network evaluations. The number of steps needed for a given accuracy depends on how curved the trajectories of $\mathbf{v}$ are: along a straight trajectory travelled at constant speed, a single Euler step is exact. This is the motivation for the next subsection.
+
+\subsection{Optimal transport couplings}
+
+\paragraph{Why the coupling matters \citep{pooladian2023,tong2024}.} Theorem~\ref{thm:interp} holds for \emph{every} coupling $\gamma$, so the coupling is a free design choice. With the independent coupling, many straight lines cross: at a point $(t,\mathbf{x})$ several pairs meet, heading in different directions. The field $\mathbf{v}_t(\mathbf{x})$ averages them, and a particle following the average bends from one direction to another over time. The individual lines are straight, but the trajectories of $\mathbf{v}$ are curved, and Euler's method needs many steps. If instead no two lines ever met at the same time, each $(t,\mathbf{x})$ would be visited by at most one pair, the average would be that pair's own velocity, and the trajectories of $\mathbf{v}$ would be the straight lines themselves.
+
+\begin{definition}[Optimal transport coupling; \citealp{villani2009}]\label{def:ot}
+An \emph{optimal transport (OT) coupling} of $p_0$ and $p_1$ is a coupling $\gamma^\star$ that minimises the expected squared displacement among all couplings:
+\[
+\gamma^\star\in\operatorname*{arg\,min}_{\gamma}\ \mathbb{E}_{(\mathbf{x}_0,\mathbf{x}_1)\sim\gamma}\left\|\mathbf{x}_1-\mathbf{x}_0\right\|^2 .
+\]
+\end{definition}
+
+A standard fact about optimal couplings is that their pairs cannot be improved by swapping partners (cyclical monotonicity, \citealp[Ch.~5]{villani2009}): if $(\mathbf{a}_0,\mathbf{a}_1)$ and $(\mathbf{b}_0,\mathbf{b}_1)$ are two pairs of an OT coupling, then
+\begin{equation}\label{eq:cyclic}
+\left\|\mathbf{a}_1-\mathbf{a}_0\right\|^2+\left\|\mathbf{b}_1-\mathbf{b}_0\right\|^2\le\left\|\mathbf{b}_1-\mathbf{a}_0\right\|^2+\left\|\mathbf{a}_1-\mathbf{b}_0\right\|^2 .
+\end{equation}
+Otherwise, reassigning a little probability mass from the original pairs to the swapped ones would lower the expected cost, contradicting optimality.
+
+\begin{proposition}[OT lines do not cross]\label{prop:nocross}
+Let $(\mathbf{a}_0,\mathbf{a}_1)$ and $(\mathbf{b}_0,\mathbf{b}_1)$ be two pairs of an OT coupling, joined by the linear interpolant. If their lines pass through the same point $\mathbf{z}$ at the same time $t\in(0,1)$, then the two pairs are identical.
+\end{proposition}
+
+\begin{proof}
+Write $\alpha=\|\mathbf{a}_1-\mathbf{a}_0\|$ and $\beta=\|\mathbf{b}_1-\mathbf{b}_0\|$. The common point is $\mathbf{z}=(1-t)\mathbf{a}_0+t\mathbf{a}_1=(1-t)\mathbf{b}_0+t\mathbf{b}_1$, so
+\[
+\|\mathbf{z}-\mathbf{a}_0\|=t\alpha,\quad\|\mathbf{a}_1-\mathbf{z}\|=(1-t)\alpha,\quad\|\mathbf{z}-\mathbf{b}_0\|=t\beta,\quad\|\mathbf{b}_1-\mathbf{z}\|=(1-t)\beta .
+\]
+Route each swapped pair through $\mathbf{z}$ and use the triangle inequality:
+\[
+\|\mathbf{b}_1-\mathbf{a}_0\|\le t\alpha+(1-t)\beta,\qquad\|\mathbf{a}_1-\mathbf{b}_0\|\le t\beta+(1-t)\alpha .
+\]
+Squaring and adding,
+\[
+\|\mathbf{b}_1-\mathbf{a}_0\|^2+\|\mathbf{a}_1-\mathbf{b}_0\|^2\le\left(t^2+(1-t)^2\right)(\alpha^2+\beta^2)+4t(1-t)\,\alpha\beta\le\alpha^2+\beta^2,
+\]
+where the last step uses $2\alpha\beta\le\alpha^2+\beta^2$ and $t^2+(1-t)^2+2t(1-t)=1$. So swapping never costs more. Combined with \eqref{eq:cyclic}, every inequality above must be an equality. Equality in $2\alpha\beta\le\alpha^2+\beta^2$ gives $\alpha=\beta$. Equality in the triangle inequality means $\mathbf{z}-\mathbf{a}_0$ and $\mathbf{b}_1-\mathbf{z}$ point in the same direction, that is, $\mathbf{a}_1-\mathbf{a}_0$ and $\mathbf{b}_1-\mathbf{b}_0$ are parallel and equally oriented. With equal lengths, $\mathbf{a}_1-\mathbf{a}_0=\mathbf{b}_1-\mathbf{b}_0=:\mathbf{w}$. Then $\mathbf{a}_0+t\mathbf{w}=\mathbf{z}=\mathbf{b}_0+t\mathbf{w}$ gives $\mathbf{a}_0=\mathbf{b}_0$, and hence $\mathbf{a}_1=\mathbf{b}_1$.
+\end{proof}
+
+So under an OT coupling, the pair passing through $(t,\mathbf{x})$ is unique, the conditional average in $\mathbf{v}_t(\mathbf{x})$ is over a single pair, and $\mathbf{v}_t(\mathbf{x})=\mathbf{x}_1-\mathbf{x}_0$ for that pair. The trajectories of $\mathbf{v}$ are then the straight lines of the interpolant, travelled at constant speed, and in this idealised case one Euler step from $\mathbf{x}_0$ lands exactly on its partner $\mathbf{x}_1$. The flow matching targets also become deterministic given $(\mathbf{x}_t,t)$, so the irreducible term of Proposition~\ref{prop:fmsplit} vanishes.
+
+\paragraph{Using OT in training: minibatch couplings \citep{pooladian2023,tong2024}.} The exact OT coupling between $p_0$ and $p_1$ is unavailable, since we only have samples of $p_1$. The practical substitute is to solve the OT problem \emph{within each minibatch}. Draw $B$ noise samples and $B$ data samples independently, and pair them by the permutation $\sigma$ that minimises the total squared distance:
+\[
+\sigma^\star\in\operatorname*{arg\,min}_{\sigma\in S_B}\ \sum_{b=1}^B\left\|\mathbf{x}_1^{(\sigma(b))}-\mathbf{x}_0^{(b)}\right\|^2 .
+\]
+
+Permuting the data within a batch does not change which points appear, only how they are paired. Each $\mathbf{x}_0^{(b)}$ is still a sample of $p_0$ and each $\mathbf{x}_1^{(\sigma(b))}$ a sample of $p_1$, so the resulting pairs form a valid coupling. Theorem~\ref{thm:interp} and Proposition~\ref{prop:fmsplit} therefore apply unchanged: the network still learns a field that transports $p_0$ to $p_1$, now one with straighter trajectories. As $B$ grows, the minibatch coupling approaches the true OT coupling; for small $B$ it is close to the independent coupling. Sampling (Algorithm~\ref{alg:fmsample}) is unchanged.
+
+\begin{algorithm}[htbp]
+\caption{Flow matching with minibatch OT coupling: training}\label{alg:otfm}
+\begin{algorithmic}[1]
+\Repeat
+\State Sample $\{\mathbf{x}_0^{(b)}\}_{b=1}^B\sim p_0$ and $\{\mathbf{x}_1^{(b)}\}_{b=1}^B\sim p_1$ independently
+\State $C_{ij}\gets\|\mathbf{x}_0^{(i)}-\mathbf{x}_1^{(j)}\|^2$ for $i,j=1,\dots,B$
+\State $\sigma^\star\gets$ solution of the assignment problem for $C$
+\State Re-pair: $\mathbf{x}_1^{(b)}\gets\mathbf{x}_1^{(\sigma^\star(b))}$ for $b=1,\dots,B$
+\State Sample $t^{(b)}\sim\mathcal{U}[0,1]$ and continue as in lines 3--6 of Algorithm~\ref{alg:fmtrain}
+\Until{converged}
+\end{algorithmic}
+\end{algorithm}
+
+\newpage
+
+\section{Why we need to go further}\label{sec:further}
+
+\paragraph{General description.} Flow matching solves the transport problem: it learns a velocity field $\mathbf{v}_\theta(\mathbf{x},t)$ from samples alone, with a simple regression loss. Using that field, however, is still expensive, both for sampling and, even more so, for evaluating densities.
+
+\paragraph{Sampling takes many steps.} To generate a sample we draw $\mathbf{x}_0\sim p_0$ and integrate the ODE $\dot{\mathbf{x}}_t=\mathbf{v}_\theta(\mathbf{x}_t,t)$ up to $t=1$, for instance with Euler's method (Algorithm~\ref{alg:fmsample}). This costs $K$ network evaluations. OT couplings straighten the trajectories, but only in the idealised case do they make a single step exact; minibatch couplings are approximate and the learned field is imperfect, so in practice many steps are still needed.
+
+\paragraph{Densities are even worse.} By the instantaneous change of variables (Proposition~\ref{prop:icov}),
+\[
+\log p_1(\mathbf{x}_1)=\log p_0(\mathbf{x}_0)-\int_0^1\left(\nabla\cdot\mathbf{v}_\theta\right)(\mathbf{x}_t,t)\,\mathrm{d}t .
+\]
+To evaluate the density at a point $\mathbf{x}_1$, we must therefore integrate the ODE backwards to find the starting point $\mathbf{x}_0$, and accumulate the divergence along the way at every step. Each divergence costs either $d$ derivative passes, which is expensive in high dimension, or one Hutchinson estimate (Lemma~\ref{lem:hutch}), whose variance grows with the dimension and so gives a poor approximation. One density evaluation thus costs about $K\times d$ passes exactly, or $K$ noisy ones.
+
+\paragraph{Outlook.} The next part discusses three methods that address these issues: F2D2 \citep{ai2026}, FALCON \citep{rehman2026} and SCALLOP \citep{ouyang2026}. We start with SCALLOP, explaining how it removes both costs by learning the flow map and the change in log-density directly, and then compare the three.
+
+\newpage
+
+\part{Improving flow matching: scalable likelihood distillation of flow maps}\label{part:two}
+
+\paragraph{General description.} We have seen how flow matching trains a parametric velocity field $\mathbf{v}_\theta(\mathbf{x},t)$, which can be integrated from a noise sample $\mathbf{x}_0\sim p_0$ to obtain a sample approximately distributed as $p_1$. Two costs remain. Sampling requires integrating the ODE, which takes many steps. Evaluating densities additionally requires the integral of the divergence along the trajectory, computed at every step either by $d$ derivative passes or by Hutchinson's estimator. We now show how to learn the flow map itself, which jumps between any two times in a single evaluation, by distilling it from the velocity field, and how to equip it with a density head that predicts the change in log-density over each jump, trained without ever computing a divergence. This part follows SCALLOP \citep{ouyang2026}, which builds on flow maps \citep{boffi2024flowmap,boffi2025build} and on the flow map with a density head of F2D2 \citep{ai2026}.
+
+\section{Learning the flow map}\label{sec:flowmap2}
+
+\paragraph{General description.} In Part~1 we trained a network that returns the velocity field, but using it requires integrating the ODE with $K$ Euler steps. Densities are not learned either: to evaluate the density of a data point $\mathbf{x}_1$, we use the instantaneous change of variables (Proposition~\ref{prop:icov}),
+\[
+\log p_1(\mathbf{x}_1)=\log p_0(\mathbf{x}_0)-\int_0^1\left(\nabla\cdot\mathbf{v}_s\right)(\mathbf{x}_s)\,\mathrm{d}s,
+\]
+which means integrating backwards from the data point to its noise point while accumulating the divergence, a slow process. Instead, we now wish to learn the flow map itself, so that the ODE never has to be integrated.
+
+\begin{definition}[Two-time flow map; \citealp{boffi2024flowmap}]\label{def:flowmap2}
+Let $\mathbf{v}$ be a velocity field. Its \emph{flow map} is the function $\boldsymbol{\Phi}:\mathbb{R}^d\times[0,1]\times[0,1]\to\mathbb{R}^d$ such that $\boldsymbol{\Phi}(\mathbf{x},t,s)$ is the position at time $s$ of the trajectory that passes through $\mathbf{x}$ at time $t$. It is well defined by the Picard--Lindel\"of theorem (Theorem~\ref{thm:pl}). The flow map of Definition~\ref{def:flowmap} is the special case $\boldsymbol{\phi}_t(\mathbf{x}_0)=\boldsymbol{\Phi}(\mathbf{x}_0,0,t)$.
+\end{definition}
+
+In words: start at the point $\mathbf{x}$ at time $t$ and follow the velocity field until time $s$. The time $s$ may be later or earlier than $t$, so $\boldsymbol{\Phi}$ can jump both forwards and backwards.
+
+\begin{proposition}[Integral form of the flow map]\label{prop:flowintegral}
+For all $\mathbf{x}\in\mathbb{R}^d$ and $t,s\in[0,1]$,
+\[
+\boldsymbol{\Phi}(\mathbf{x},t,s)=\mathbf{x}+\int_t^s\mathbf{v}_\tau\left(\boldsymbol{\Phi}(\mathbf{x},t,\tau)\right)\mathrm{d}\tau .
+\]
+\end{proposition}
+
+\begin{proof}
+The curve $\tau\mapsto\boldsymbol{\Phi}(\mathbf{x},t,\tau)$ is the trajectory through $(t,\mathbf{x})$, so its derivative is $\mathbf{v}_\tau(\boldsymbol{\Phi}(\mathbf{x},t,\tau))$ and its value at $\tau=t$ is $\mathbf{x}$. Integrating the derivative from $t$ to $s$ (fundamental theorem of calculus) gives the formula.
+\end{proof}
+
+\begin{proposition}[Properties of the flow map]\label{prop:flowprops}
+For all $\mathbf{x}\in\mathbb{R}^d$ and $t,r,s\in[0,1]$:
+\begin{enumerate}[label=(\alph*)]
+\item \emph{Zero-length jump:} $\boldsymbol{\Phi}(\mathbf{x},t,t)=\mathbf{x}$;
+\item \emph{Velocity at the end point:} $\partial_s\boldsymbol{\Phi}(\mathbf{x},t,s)=\mathbf{v}_s\left(\boldsymbol{\Phi}(\mathbf{x},t,s)\right)$;
+\item \emph{Composition (semigroup property):} $\boldsymbol{\Phi}\left(\boldsymbol{\Phi}(\mathbf{x},t,r),r,s\right)=\boldsymbol{\Phi}(\mathbf{x},t,s)$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) Set $s=t$ in Proposition~\ref{prop:flowintegral}: the integral over an empty interval vanishes.
+
+(b) Differentiate Proposition~\ref{prop:flowintegral} in $s$, using the fundamental theorem of calculus.
+
+(c) Let $\mathbf{y}=\boldsymbol{\Phi}(\mathbf{x},t,r)$. The trajectory through $(t,\mathbf{x})$ passes through $\mathbf{y}$ at time $r$, so it is also a trajectory through $(r,\mathbf{y})$. By uniqueness (Theorem~\ref{thm:pl}), it is \emph{the} trajectory through $(r,\mathbf{y})$. Evaluating both descriptions at time $s$ gives $\boldsymbol{\Phi}(\mathbf{y},r,s)=\boldsymbol{\Phi}(\mathbf{x},t,s)$.
+\end{proof}
+
+Property (c) says that jumping from $t$ to $r$ and then from $r$ to $s$ is the same as jumping from $t$ to $s$ directly. Property (b) at $s=t$, combined with (a), gives $\partial_s\boldsymbol{\Phi}(\mathbf{x},t,s)\big|_{s=t}=\mathbf{v}_t(\mathbf{x})$: the velocity field is the derivative of the flow map on the diagonal $s=t$.
+
+\paragraph{Average velocity.} By the integral form (Proposition~\ref{prop:flowintegral}), the displacement $\boldsymbol{\Phi}(\mathbf{x},t,s)-\mathbf{x}$ is the integral of the velocity field along the trajectory. Dividing by the elapsed time $s-t$ gives the average velocity along the trajectory.
+
+\begin{definition}[Average velocity; \citealp{boffi2024flowmap,geng2025meanflow}]\label{def:avgvel}
+For $s\neq t$, the \emph{average velocity} of the flow map is
+\[
+\mathbf{u}(\mathbf{x},t,s):=\frac{1}{s-t}\int_t^s\mathbf{v}_\tau\left(\boldsymbol{\Phi}(\mathbf{x},t,\tau)\right)\mathrm{d}\tau ,
+\]
+and on the diagonal we set $\mathbf{u}(\mathbf{x},t,t):=\mathbf{v}_t(\mathbf{x})$.
+\end{definition}
+
+The diagonal value is not an arbitrary choice: it is the limit of the off-diagonal values. As $s\to t$, the average of a continuous function over the shrinking interval between $t$ and $s$ tends to its value at $\tau=t$, which is $\mathbf{v}_t(\boldsymbol{\Phi}(\mathbf{x},t,t))=\mathbf{v}_t(\mathbf{x})$. So $\mathbf{u}$ is continuous, and
+\[
+\mathbf{u}(\mathbf{x},t,t)=\mathbf{v}_t(\mathbf{x}).
+\]
+This identity is what ties the flow map to the velocity field, and it will be the starting point for the self-distillation loss. Multiplying the definition by $s-t$ and using Proposition~\ref{prop:flowintegral},
+\begin{equation}\label{eq:flowavg}
+\boldsymbol{\Phi}(\mathbf{x},t,s)=\mathbf{x}+(s-t)\,\mathbf{u}(\mathbf{x},t,s),
+\end{equation}
+which also holds at $s=t$, where both sides equal $\mathbf{x}$. This is the form we use for training.
+
+\begin{definition}[Neural flow map; \citealp{boffi2025build,ouyang2026}]\label{def:neuralflow}
+A \emph{neural flow map} is a neural network $\mathbf{u}_\theta:\mathbb{R}^d\times[0,1]\times[0,1]\to\mathbb{R}^d$ with parameters $\theta$, which takes a point and two times and induces the jump
+\[
+\boldsymbol{\Phi}_\theta(\mathbf{x},t,s)=\mathbf{x}+(s-t)\,\mathbf{u}_\theta(\mathbf{x},t,s).
+\]
+\end{definition}
+
+The parametrisation builds in the zero-length jump property: $\boldsymbol{\Phi}_\theta(\mathbf{x},t,t)=\mathbf{x}$ for every $\theta$. Differentiating in $s$ with the product rule,
+\[
+\partial_s\boldsymbol{\Phi}_\theta(\mathbf{x},t,s)=\mathbf{u}_\theta(\mathbf{x},t,s)+(s-t)\,\partial_s\mathbf{u}_\theta(\mathbf{x},t,s),
+\]
+so at $s=t$ the second term vanishes and $\partial_s\boldsymbol{\Phi}_\theta(\mathbf{x},t,s)\big|_{s=t}=\mathbf{u}_\theta(\mathbf{x},t,t)$. Comparing with Proposition~\ref{prop:flowprops}(b), the diagonal of the network plays the role of the velocity field, and we will train it so that $\mathbf{u}_\theta(\mathbf{x},t,t)\approx\mathbf{v}_t(\mathbf{x})$. Finally, by \eqref{eq:flowavg}, if $\mathbf{u}_\theta(\mathbf{x},t,s)=\mathbf{u}(\mathbf{x},t,s)$ for all inputs, then $\boldsymbol{\Phi}_\theta=\boldsymbol{\Phi}$: learning the flow map is the same as learning the average velocity.
+
+
+\section{Training the flow map}\label{sec:trainflow}
+
+\paragraph{A condition that characterises the flow map.} For fixed $(\mathbf{x},t)$, the true flow map $s\mapsto\boldsymbol{\Phi}(\mathbf{x},t,s)$ solves the ODE
+\[
+\partial_s\mathbf{y}(s)=\mathbf{v}_s\left(\mathbf{y}(s)\right),\qquad\mathbf{y}(t)=\mathbf{x},
+\]
+and by the Picard--Lindel\"of theorem (Theorem~\ref{thm:pl}) it is the \emph{only} solution. The neural flow map starts at the right place by construction, $\boldsymbol{\Phi}_\theta(\mathbf{x},t,t)=\mathbf{x}$, so it remains only to enforce the ODE itself, with the candidate on both sides:
+\[
+\partial_s\boldsymbol{\Phi}_\theta(\mathbf{x},t,s)=\mathbf{v}_s\left(\boldsymbol{\Phi}_\theta(\mathbf{x},t,s)\right),
+\qquad\text{i.e.}\qquad
+\mathbf{u}_\theta(\mathbf{x},t,s)+(s-t)\,\partial_s\mathbf{u}_\theta(\mathbf{x},t,s)=\mathbf{v}_s\left(\boldsymbol{\Phi}_\theta(\mathbf{x},t,s)\right).
+\]
+The right-hand side does not involve the true trajectory, only the velocity at the network's own landing point. Imposing $\partial_s\boldsymbol{\Phi}_\theta=\partial_s\boldsymbol{\Phi}$ instead would require $\mathbf{v}_s$ at the true position $\boldsymbol{\Phi}(\mathbf{x},t,s)$, which we cannot compute without integrating the ODE.
+
+\paragraph{Training the diagonal.} At $s=t$ the condition reduces to $\mathbf{u}_\theta(\mathbf{x},t,t)=\mathbf{v}_t(\mathbf{x})$. SCALLOP \citep{ouyang2026} works in a distillation setting: a pretrained velocity field $\mathbf{v}_\phi\approx\mathbf{v}_t$, the teacher, is available, and the diagonal is regressed onto it. The \emph{diagonal loss} is
+\[
+\mathcal{L}_{\mathrm{diag}}(\theta):=\mathbb{E}_{t\sim\mathcal{U}[0,1]}\,\mathbb{E}_{(\mathbf{x}_0,\mathbf{x}_1)\sim\gamma}\left\|\mathbf{u}_\theta(\mathbf{x}_t,t,t)-\mathbf{v}_\phi(\mathbf{x}_t,t)\right\|^2 .
+\]
+Without a teacher, this is a flow matching problem: by Proposition~\ref{prop:fmsplit}, regressing the diagonal onto the per-pair velocities $\partial_t\mathbf{I}(t,\mathbf{x}_0,\mathbf{x}_1)$ also makes it learn $\mathbf{v}_t$.
+
+\paragraph{Training off the diagonal.} We now consider jumps with $s>t$, following the Lagrangian self-distillation of \citet{boffi2025build}. The condition $\partial_s\boldsymbol{\Phi}_\theta=\mathbf{v}_s(\boldsymbol{\Phi}_\theta)$ asks for the velocity at the landing point. The true landing point $\boldsymbol{\Phi}(\mathbf{x},t,s)$ is unknown, since finding it would mean integrating the ODE from $t$ to $s$, which is exactly what we wish to avoid. We use the network's own landing point instead,
+\[
+\hat{\mathbf{x}}_s:=\boldsymbol{\Phi}_\theta(\mathbf{x},t,s)=\mathbf{x}+(s-t)\,\mathbf{u}_\theta(\mathbf{x},t,s),
+\]
+which costs one forward pass. Early in training this point is wrong, but that does not matter: the next proposition shows that enforcing the condition at the network's own landing points is enough to recover the true flow map.
+
+\begin{proposition}[Self-consistency; cf.\ \citealp{boffi2025build}]\label{prop:selfcons}
+Suppose $\boldsymbol{\Phi}_\theta$ is differentiable in $s$ and
+\[
+\partial_s\boldsymbol{\Phi}_\theta(\mathbf{x},t,s)=\mathbf{v}_s\left(\boldsymbol{\Phi}_\theta(\mathbf{x},t,s)\right)\qquad\text{for all }\mathbf{x}\in\mathbb{R}^d\text{ and }t<s .
+\]
+Then $\boldsymbol{\Phi}_\theta(\mathbf{x},t,s)=\boldsymbol{\Phi}(\mathbf{x},t,s)$ for all $\mathbf{x}\in\mathbb{R}^d$ and $t\le s$.
+\end{proposition}
+
+\begin{proof}
+Fix $\mathbf{x}$ and $t$, and let $\mathbf{y}(s):=\boldsymbol{\Phi}_\theta(\mathbf{x},t,s)$ for $s\in[t,1]$. By assumption $\mathbf{y}$ solves the ODE $\dot{\mathbf{y}}(s)=\mathbf{v}_s(\mathbf{y}(s))$, and by construction $\mathbf{y}(t)=\boldsymbol{\Phi}_\theta(\mathbf{x},t,t)=\mathbf{x}$. The true flow map $s\mapsto\boldsymbol{\Phi}(\mathbf{x},t,s)$ solves the same ODE with the same starting value. By the uniqueness part of the Picard--Lindel\"of theorem (Theorem~\ref{thm:pl}), the two curves coincide.
+\end{proof}
+
+We still need $\mathbf{v}_s$ at the landing point. Once the diagonal is trained, $\mathbf{u}_\theta(\hat{\mathbf{x}}_s,s,s)\approx\mathbf{v}_s(\hat{\mathbf{x}}_s)$, so the network itself provides it. Using this as the target is called \textbf{self-distillation}: the network's answers for zero-length jumps become the targets for its longer jumps.
+
+\begin{definition}[Stop-gradient; as used in \citealp{boffi2025build,ouyang2026}]\label{def:sg}
+The \emph{stop-gradient} operator $\operatorname{sg}$ is the identity in the forward computation, $\operatorname{sg}(\mathbf{z})=\mathbf{z}$, but is treated as a constant when differentiating: $\nabla_{\mathbf{x}}\operatorname{sg}\left(g(\mathbf{x})\right)=\mathbf{0}$ for any $g$. Only the gradient paths that pass through $\operatorname{sg}$ are cut; if $\mathbf{x}$ also appears outside it, those paths still carry gradient.
+\end{definition}
+
+We apply two stop-gradients.
+\begin{itemize}
+\item \emph{On the target $\mathbf{u}_\theta(\hat{\mathbf{x}}_s,s,s)$.} The diagonal is anchored to the teacher by $\mathcal{L}_{\mathrm{diag}}$ and is the only source of correct information. The stop-gradient makes information flow from the diagonal to the long jumps and not backwards: the network cannot reduce the loss by changing its diagonal to agree with untrained jumps.
+\item \emph{On the derivative $\partial_s\mathbf{u}_\theta(\mathbf{x},t,s)$.} First, if the values of $\mathbf{u}_\theta$ are correct for every $s$, so is their derivative in $s$, so the derivative needs no training signal of its own; letting the gradient through would only allow the network to reduce the residual by bending the function rather than correcting its value. Second, the derivative is computed by a Jacobian--vector product, and backpropagating through it would require a second-order derivative, which is expensive.
+\end{itemize}
+Neither stop-gradient changes where the loss vanishes, which is still exactly the condition of Proposition~\ref{prop:selfcons}; they only change the route the optimiser takes towards it. With both in place, each step regresses $\mathbf{u}_\theta(\mathbf{x},t,s)$ onto the frozen target
+\[
+\operatorname{sg}\left[\mathbf{u}_\theta(\hat{\mathbf{x}}_s,s,s)-(s-t)\,\partial_s\mathbf{u}_\theta(\mathbf{x},t,s)\right].
+\]
+
+Putting everything together gives the \textbf{Lagrangian self-distillation} loss \citep{boffi2025build}
+\[
+\mathcal{L}_{\mathrm{LSD}}(\theta):=\mathbb{E}_{t<s}\,\mathbb{E}_{\mathbf{x}_t}\left\|\mathbf{u}_\theta(\mathbf{x}_t,t,s)+(s-t)\,\operatorname{sg}\left[\partial_s\mathbf{u}_\theta(\mathbf{x}_t,t,s)\right]-\operatorname{sg}\left[\mathbf{u}_\theta(\hat{\mathbf{x}}_s,s,s)\right]\right\|^2,
+\]
+with landing point $\hat{\mathbf{x}}_s=\mathbf{x}_t+(s-t)\,\mathbf{u}_\theta(\mathbf{x}_t,t,s)$, where $\mathbf{x}_t=\mathbf{I}(t,\mathbf{x}_0,\mathbf{x}_1)$ is an interpolant sample and the times $(t,s)$ are drawn uniformly on $\{0\le t<s\le1\}$. The flow map is trained on both losses at once,
+\[
+\mathcal{L}(\theta)=\mathcal{L}_{\mathrm{diag}}(\theta)+\mathcal{L}_{\mathrm{LSD}}(\theta),
+\]
+so that the diagonal learns the velocity from the teacher while the off-diagonal learns the jumps from the diagonal.
+
+\paragraph{Sampling.} Once trained, the neural flow map can jump between any two times, so we may sample from $p_1$ in any number $N\ge1$ of jumps, chosen at sampling time and without retraining \citep{boffi2025build,ouyang2026}.
+
+\begin{algorithm}[htbp]
+\caption{Sampling with a neural flow map in $N$ jumps}\label{alg:flowsample}
+\begin{algorithmic}[1]
+\Require trained $\mathbf{u}_\theta$, $N\ge1$, time grid $0=t_0<t_1<\dots<t_N=1$ \Comment{e.g.\ $t_k=k/N$}
+\State Sample $\mathbf{x}\sim p_0$
+\For{$k=1,\dots,N$}
+\State $\mathbf{x}\gets\mathbf{x}+(t_k-t_{k-1})\,\mathbf{u}_\theta(\mathbf{x},t_{k-1},t_k)$ \Comment{one jump $\boldsymbol{\Phi}_\theta(\mathbf{x},t_{k-1},t_k)$}
+\EndFor
+\State \Return $\mathbf{x}$ \Comment{approximately distributed as $p_1$}
+\end{algorithmic}
+\end{algorithm}
+
+The cost is $N$ network evaluations. For the exact flow map the result would not depend on the grid, by composition (Proposition~\ref{prop:flowprops}(c)); for the learned one, long jumps are the least accurate, so a few jumps usually give much better samples than one, while still being far cheaper than integrating the velocity field. This is the main benefit of the flow map approach: samples in very few steps. Evaluating densities, however, is still expensive, and we fix this with the same approach.
+
+\newpage
+
+\section{Estimating densities}\label{sec:densities}
+
+\paragraph{General description.} A sample produced in a few jumps also needs its log-density. We know the log-density of the starting noise exactly, so what remains is how much the log-density changes over each jump. We will train a second output of the network to predict exactly this change, in the same way that the flow map predicts the change in position. This joint construction was introduced by F2D2 \citep{ai2026} and is also used by SCALLOP \citep{ouyang2026}.
+
+\begin{definition}[Log-density increment; \citealp{ai2026,ouyang2026}]\label{def:lambda}
+The \emph{log-density increment} is the function $\lambda:\mathbb{R}^d\times[0,1]\times[0,1]\to\mathbb{R}$ given by
+\[
+\lambda(\mathbf{x},t,s):=\log p_s\left(\boldsymbol{\Phi}(\mathbf{x},t,s)\right)-\log p_t(\mathbf{x}).
+\]
+\end{definition}
+
+In words: start at $\mathbf{x}$ at time $t$, jump to time $s$ along the trajectory, and record how much the log-density has changed between the start and the landing point.
+
+\begin{proposition}[Integral form of the increment; cf.\ \citealp{chen2018}]\label{prop:lambdaint}
+For all $\mathbf{x}\in\mathbb{R}^d$ and $t,s\in[0,1]$,
+\[
+\lambda(\mathbf{x},t,s)=-\int_t^s\left(\nabla\cdot\mathbf{v}_\tau\right)\left(\boldsymbol{\Phi}(\mathbf{x},t,\tau)\right)\mathrm{d}\tau .
+\]
+\end{proposition}
+
+\begin{proof}
+This is the instantaneous change of variables (Proposition~\ref{prop:icov}), started at time $t$ instead of $0$. Along the trajectory $\tau\mapsto\boldsymbol{\Phi}(\mathbf{x},t,\tau)$, the same argument gives $\frac{\mathrm{d}}{\mathrm{d}\tau}\log p_\tau\left(\boldsymbol{\Phi}(\mathbf{x},t,\tau)\right)=-\left(\nabla\cdot\mathbf{v}_\tau\right)\left(\boldsymbol{\Phi}(\mathbf{x},t,\tau)\right)$. Integrating from $\tau=t$ to $\tau=s$ and using $\boldsymbol{\Phi}(\mathbf{x},t,t)=\mathbf{x}$ gives the result.
+\end{proof}
+
+\begin{proposition}[Properties of the increment]\label{prop:lambdaprops}
+For all $\mathbf{x}\in\mathbb{R}^d$ and $t,r,s\in[0,1]$:
+\begin{enumerate}[label=(\alph*)]
+\item \emph{Zero-length jump:} $\lambda(\mathbf{x},t,t)=0$;
+\item \emph{Rate of change at the end point:} $\partial_s\lambda(\mathbf{x},t,s)=-\left(\nabla\cdot\mathbf{v}_s\right)\left(\boldsymbol{\Phi}(\mathbf{x},t,s)\right)$;
+\item \emph{Additivity:} $\lambda(\mathbf{x},t,s)=\lambda(\mathbf{x},t,r)+\lambda\left(\boldsymbol{\Phi}(\mathbf{x},t,r),r,s\right)$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) The integral in Proposition~\ref{prop:lambdaint} is over an empty interval.
+
+(b) Differentiate Proposition~\ref{prop:lambdaint} in $s$ (fundamental theorem of calculus).
+
+(c) Write $\mathbf{y}=\boldsymbol{\Phi}(\mathbf{x},t,r)$. By composition (Proposition~\ref{prop:flowprops}(c)), $\boldsymbol{\Phi}(\mathbf{y},r,s)=\boldsymbol{\Phi}(\mathbf{x},t,s)$, so the right-hand side telescopes:
+\[
+\left[\log p_r(\mathbf{y})-\log p_t(\mathbf{x})\right]+\left[\log p_s\left(\boldsymbol{\Phi}(\mathbf{x},t,s)\right)-\log p_r(\mathbf{y})\right]=\lambda(\mathbf{x},t,s). \qedhere
+\]
+\end{proof}
+
+These properties mirror those of the flow map (Proposition~\ref{prop:flowprops}), with one difference: positions \emph{compose} under successive jumps, while log-density changes \emph{add}. Property (c) is what makes multi-jump density evaluation possible: the log-density of a sample produced in $N$ jumps is the log-density of its starting noise plus the sum of the increments of the individual jumps.
+
+\paragraph{Average rate and the density head.} We parametrise the increment exactly as we parametrised the flow map, through an average.
+
+\begin{definition}[Average log-density rate]\label{def:avgrate}
+For $s\neq t$, the \emph{average log-density rate} is
+\[
+D(\mathbf{x},t,s):=\frac{\lambda(\mathbf{x},t,s)}{s-t}=-\frac{1}{s-t}\int_t^s\left(\nabla\cdot\mathbf{v}_\tau\right)\left(\boldsymbol{\Phi}(\mathbf{x},t,\tau)\right)\mathrm{d}\tau ,
+\]
+and on the diagonal we set $D(\mathbf{x},t,t):=-\left(\nabla\cdot\mathbf{v}_t\right)(\mathbf{x})$.
+\end{definition}
+
+As for the average velocity, the diagonal value is the limit of the off-diagonal ones: as $s\to t$, the average of the integrand over the shrinking interval tends to its value at $\tau=t$, which is $-(\nabla\cdot\mathbf{v}_t)(\mathbf{x})$. So $D$ is continuous, and on the diagonal it is minus the divergence.
+
+\begin{definition}[Density head; \citealp{ai2026,ouyang2026}]\label{def:densityhead}
+A \emph{density head} is a network output $D_\theta:\mathbb{R}^d\times[0,1]\times[0,1]\to\mathbb{R}$, sharing its body with $\mathbf{u}_\theta$, which induces the predicted increment
+\[
+\lambda_\theta(\mathbf{x},t,s):=(s-t)\,D_\theta(\mathbf{x},t,s).
+\]
+\end{definition}
+
+SCALLOP itself uses a vector-valued head $\mathbf{D}_\theta(\mathbf{x},t,s)\in\mathbb{R}^d$, one entry per coordinate, with predicted increment $\lambda_\theta=(s-t)\,\mathbf{1}_d^\top\mathbf{D}_\theta$; its diagonal targets the diagonal entries of $-\mathbf{J}_{\mathbf{v}_t}$, whose sum is $-\nabla\cdot\mathbf{v}_t$. We present the scalar version, which has the same structure.
+
+This mirrors the neural flow map $\boldsymbol{\Phi}_\theta=\mathbf{x}+(s-t)\,\mathbf{u}_\theta$, with the starting value $0$ in place of $\mathbf{x}$, so the zero-length jump property $\lambda_\theta(\mathbf{x},t,t)=0$ holds for every $\theta$. The network thus learns the average rate of change of the log-density between the two times. Differentiating in $s$ with the product rule,
+\[
+\partial_s\lambda_\theta(\mathbf{x},t,s)=D_\theta(\mathbf{x},t,s)+(s-t)\,\partial_sD_\theta(\mathbf{x},t,s),
+\]
+which at $s=t$ reduces to $D_\theta(\mathbf{x},t,t)$. The training strategy is the same as for the flow map: the diagonal must satisfy $D_\theta(\mathbf{x},t,t)\approx-(\nabla\cdot\mathbf{v}_t)(\mathbf{x})$, and the off-diagonal is trained from the diagonal by self-distillation.
+
+\section{Training the density head}\label{sec:traindensity}
+
+\paragraph{General description.} By Proposition~\ref{prop:lambdaprops}(a)--(b), for fixed $(\mathbf{x},t)$ the increment is the unique function of $s$ that starts at $0$ and whose derivative is minus the divergence along the trajectory. The density head starts at $0$ by construction, so, exactly as for the flow map, it remains to enforce
+\[
+D_\theta(\mathbf{x},t,s)+(s-t)\,\partial_sD_\theta(\mathbf{x},t,s)=-\left(\nabla\cdot\mathbf{v}_s\right)\left(\boldsymbol{\Phi}_\theta(\mathbf{x},t,s)\right),
+\]
+evaluated at the flow map's own landing point $\hat{\mathbf{x}}_s=\boldsymbol{\Phi}_\theta(\mathbf{x},t,s)$. If both this condition and the flow map condition hold, then $\lambda_\theta=\lambda$, since a function is determined by its starting value and its derivative.
+
+\paragraph{Training the diagonal.} At $s=t$ the condition reads $D_\theta(\mathbf{x},t,t)=-(\nabla\cdot\mathbf{v}_t)(\mathbf{x})$, imposed at interpolant points $\mathbf{x}_t$. Evaluating the divergence directly is exactly the expensive operation we want to avoid; F2D2 instead regresses onto a Hutchinson estimate of it \citep{ai2026}. We therefore use the same idea as in flow matching: find an unbiased regression target (Definition~\ref{def:unbiased}), that is, a random variable $Y_t$, computed from $t$, the pair $(\mathbf{x}_0,\mathbf{x}_1)$ and the velocity at $\mathbf{x}_t$, without any derivatives, such that
+\[
+\mathbb{E}\left[Y_t\mid\mathbf{x}_t=\mathbf{x}\right]=-\left(\nabla\cdot\mathbf{v}_t\right)(\mathbf{x}) .
+\]
+By the best-predictor theorem (Theorem~\ref{thm:bestpred}), regressing $D_\theta(\mathbf{x}_t,t,t)$ onto $Y_t$ then makes the diagonal learn minus the divergence. The \emph{diagonal divergence loss} is
+\[
+\mathcal{L}_{\mathrm{div}}(\theta):=\mathbb{E}_{t\sim\mathcal{U}[0,1]}\left[w(t)\,\mathbb{E}_{(\mathbf{x}_0,\mathbf{x}_1)\sim\gamma}\left|D_\theta(\mathbf{x}_t,t,t)-Y_t\right|^2\right],
+\]
+where $w:[0,1]\to(0,\infty)$ is a weight. Since the minimiser at each fixed $t$ is the conditional mean of $Y_t$ whatever positive number multiplies the loss at that time, the weight does not change what is learned, only how much effort the optimiser spends on each $t$. Its purpose will become clear once $Y_t$ is constructed: the label we obtain has high variance as $t\to1$ and a singularity at $t=1$, and SCALLOP uses the weight $w(t)=1-t$ to counter this.
+
+\paragraph{Training off the diagonal.} Using the same stop-gradients as for the flow map, and for the same reasons, gives the Lagrangian self-distillation loss for the density head \citep{ouyang2026}:
+\[
+\mathcal{L}^{D}_{\mathrm{LSD}}(\theta):=\mathbb{E}_{t<s}\,\mathbb{E}_{\mathbf{x}_t}\left|D_\theta(\mathbf{x}_t,t,s)+(s-t)\,\operatorname{sg}\left[\partial_sD_\theta(\mathbf{x}_t,t,s)\right]-\operatorname{sg}\left[D_\theta(\hat{\mathbf{x}}_s,s,s)\right]\right|^2,
+\]
+with the landing point $\hat{\mathbf{x}}_s=\mathbf{x}_t+(s-t)\,\mathbf{u}_\theta(\mathbf{x}_t,t,s)$ supplied by the flow map. In SCALLOP this is not a separate loss: the two heads are stacked into $\mathbf{f}_\theta=(\mathbf{u}_\theta,D_\theta)$ and a single self-distillation loss is applied to $\mathbf{f}_\theta$, which amounts to the sum $\mathcal{L}_{\mathrm{LSD}}+\mathcal{L}^{D}_{\mathrm{LSD}}$. The diagonal $D_\theta(\cdot,s,s)$ acts as the teacher, anchored by $\mathcal{L}_{\mathrm{div}}$.
+
+\paragraph{The full objective.} All terms are trained at once. Writing $\mathcal{L}_{\mathrm{diag}}(\theta;t)$ and $\mathcal{L}_{\mathrm{div}}(\theta;t)$ for the unweighted losses at a fixed time $t$, and $\mathcal{L}_{\mathrm{LSD}}(\theta;t,s)$ for the self-distillation loss of $\mathbf{f}_\theta$ at a fixed pair, SCALLOP minimises \citep[Eq.~24]{ouyang2026}
+\[
+\mathbb{E}_{t}\left[e^{-w_\psi(t,t)}\left(\mathcal{L}_{\mathrm{diag}}(\theta;t)+(1-t)\,\mathcal{L}_{\mathrm{div}}(\theta;t)\right)+w_\psi(t,t)\right]+\mathbb{E}_{t<s}\left[e^{-w_\psi(t,s)}\,\mathcal{L}_{\mathrm{LSD}}(\theta;t,s)+w_\psi(t,s)\right],
+\]
+where $w_\psi$ is a small auxiliary network, trained jointly with $\theta$, that outputs learned log-weights (Section~\ref{sec:weights}). The divergence term carries the weight $w(t)=1-t$. Times are drawn uniformly from $[0,1-\epsilon]$, and pairs uniformly from the triangle $\{t<s\}$ in $[0,1-\epsilon]^2$, with $\epsilon=10^{-5}$, to stabilise training \citep{ouyang2026}.
+
+\paragraph{Sampling with densities.} Starting from noise $\mathbf{x}_0\sim p_0$, whose log-density is known in closed form, both outputs are evaluated once per jump: the flow map moves the point and the density head accumulates the change in log-density, by additivity (Proposition~\ref{prop:lambdaprops}(c)). This is Algorithm~1 of \citet{ouyang2026}.
+
+\begin{algorithm}[htbp]
+\caption{Sampling with densities from a neural flow map with a density head}\label{alg:flowdensity}
+\begin{algorithmic}[1]
+\State Sample $\mathbf{x}\sim p_0$; set $L\gets\log p_0(\mathbf{x})$; choose a grid $0=t_0<t_1<\dots<t_N=1$
+\For{$k=1,\dots,N$}
+\State $L\gets L+(t_k-t_{k-1})\,D_\theta(\mathbf{x},t_{k-1},t_k)$ \Comment{increment $\lambda_\theta$, at the start of the jump}
+\State $\mathbf{x}\gets\mathbf{x}+(t_k-t_{k-1})\,\mathbf{u}_\theta(\mathbf{x},t_{k-1},t_k)$ \Comment{jump $\boldsymbol{\Phi}_\theta$}
+\EndFor
+\State \Return $\mathbf{x}$ and $L\approx\log p_1(\mathbf{x})$
+\end{algorithmic}
+\end{algorithm}
+
+Line 3 must use the point before line 4 moves it, since the increment is defined at the start of the jump; in practice both outputs come from one forward pass. A sample together with its log-density therefore costs $N$ network evaluations, and no divergence is computed anywhere. The only thing left is to find the label $Y_t$ that lets us learn the divergence without differentiating.
+
+
+\newpage
+
+\section{Finding the divergence label}\label{sec:label}
+
+\paragraph{General description.} We need a label $Y_t$ that can be computed from a single training example and is correct on average \citep{ouyang2026}:
+\[
+\mathbb{E}\left[Y_t\mid\mathbf{x}_t=\mathbf{x}\right]=-\left(\nabla\cdot\mathbf{v}_t\right)(\mathbf{x}).
+\]
+This is the trick from Part~1, where the per-pair velocity $\partial_t\mathbf{I}$ is a label whose average is $\mathbf{v}_t$. Throughout this section we use the linear interpolant $\mathbf{x}_t=(1-t)\mathbf{x}_0+t\mathbf{x}_1$ with the independent coupling and Gaussian noise, $p_0=\mathcal{N}(\mathbf{0},\mathbf{I}_d)$, and we take $t\in[0,1)$.
+
+\paragraph{Why the obvious label fails.} The obvious idea is to average divergences, just as we averaged velocities. Solving the interpolant for the noise gives $\mathbf{x}_0=(\mathbf{x}_t-t\mathbf{x}_1)/(1-t)$, so a pair whose data point is $\mathbf{x}_1$ and which sits at $\mathbf{x}_t=\mathbf{x}$ moves with velocity
+\[
+\mathbf{x}_1-\mathbf{x}_0=\mathbf{x}_1-\frac{\mathbf{x}-t\mathbf{x}_1}{1-t}=\frac{\mathbf{x}_1-\mathbf{x}}{1-t}.
+\]
+Viewed as a function of $\mathbf{x}$ with $\mathbf{x}_1$ held fixed, its Jacobian is $-\frac{1}{1-t}\mathbf{I}_d$, and since the divergence is the trace of the Jacobian, its divergence is $-d/(1-t)$, the same for every pair. Averaging would then give
+\[
+\nabla\cdot\mathbf{v}_t\overset{?}{=}-\frac{d}{1-t},
+\]
+which is wrong. The velocity field is a weighted average of the per-pair velocities, with weights given by how likely each data point is to have produced $\mathbf{x}$, and these weights also change with $\mathbf{x}$. Differentiating the average therefore produces a second term, from the change in the weights, which the computation above drops. Put differently, divergence does not commute with conditional expectation,
+\[
+\nabla\cdot\mathbb{E}\left[\,\cdot\mid\mathbf{x}_t=\mathbf{x}\right]\neq\mathbb{E}\left[\nabla\cdot(\,\cdot\,)\mid\mathbf{x}_t=\mathbf{x}\right],
+\]
+because the distribution being averaged over itself depends on $\mathbf{x}$. The velocity did not suffer from this, because $\mathbf{v}_t$ \emph{is} the average; the divergence is a derivative \emph{of} the average.
+
+\paragraph{Rewriting the divergence.} Instead of differentiating the field, we express the divergence through quantities that are themselves averages, using the continuity equation.
+
+\begin{definition}[Scores]\label{def:scores}
+For $t\in[0,1]$ and $\mathbf{x}\in\mathbb{R}^d$, the \emph{time score} is $\partial_t\log p_t(\mathbf{x})$, the rate of change in time of the log-density at a fixed point, and the \emph{space score} is $\nabla\log p_t(\mathbf{x})\in\mathbb{R}^d$, the gradient of the log-density.
+\end{definition}
+
+\begin{lemma}[Divergence through scores; \citealp{ouyang2026}]\label{lem:divscores}
+For every $\mathbf{x}\in\mathbb{R}^d$,
+\[
+-\left(\nabla\cdot\mathbf{v}_t\right)(\mathbf{x})=\partial_t\log p_t(\mathbf{x})+\mathbf{v}_t(\mathbf{x})\cdot\nabla\log p_t(\mathbf{x}).
+\]
+\end{lemma}
+
+\begin{proof}
+By Theorem~\ref{thm:interp}, $(p_t,\mathbf{v}_t)$ satisfies the continuity equation $\partial_tp_t+\nabla\cdot(p_t\mathbf{v}_t)=0$. Expanding the divergence with the product rule,
+\[
+\partial_tp_t+\mathbf{v}_t\cdot\nabla p_t+p_t\,\nabla\cdot\mathbf{v}_t=0 .
+\]
+Since $p_t>0$, we may divide by it. Using $\partial_tp_t/p_t=\partial_t\log p_t$ and $\nabla p_t/p_t=\nabla\log p_t$,
+\[
+\partial_t\log p_t+\mathbf{v}_t\cdot\nabla\log p_t+\nabla\cdot\mathbf{v}_t=0,
+\]
+which rearranges to the claim.
+\end{proof}
+
+The velocity $\mathbf{v}_t$ is available from the pretrained teacher, so it remains to find per-pair labels for the two scores. To do so, we fix one data point $\mathbf{x}_1$ and look only at the points $\mathbf{x}_t$ generated from it as the noise $\mathbf{x}_0$ varies.
+
+\begin{lemma}[Conditional density; cf.\ \citealp{lipman2023}]\label{lem:conddens}
+For every $\mathbf{x}_1\in\mathbb{R}^d$ and $t\in[0,1)$, the density of $\mathbf{x}_t$ given $\mathbf{x}_1$ is
+\[
+p_t(\mathbf{x}\mid\mathbf{x}_1)=\mathcal{N}\left(\mathbf{x};\,t\mathbf{x}_1,\,(1-t)^2\mathbf{I}_d\right).
+\]
+\end{lemma}
+
+\begin{proof}
+Given $\mathbf{x}_1$, the point $\mathbf{x}_t$ is the image of the standard Gaussian vector $\mathbf{z}=\mathbf{x}_0$, which is independent of $\mathbf{x}_1$, under the map
+\[
+\mathbf{g}(\mathbf{z})=t\mathbf{x}_1+(1-t)\mathbf{z}.
+\]
+For $t<1$ this map is invertible, with inverse $\mathbf{g}^{-1}(\mathbf{x})=(\mathbf{x}-t\mathbf{x}_1)/(1-t)$, Jacobian $\mathbf{J}_{\mathbf{g}}=(1-t)\mathbf{I}_d$, and $\det\mathbf{J}_{\mathbf{g}}=(1-t)^d$. By the change of variables formula (Theorem~\ref{thm:cov}),
+\[
+p_t(\mathbf{x}\mid\mathbf{x}_1)=\frac{1}{(1-t)^d}\,p_0\left(\frac{\mathbf{x}-t\mathbf{x}_1}{1-t}\right)=\frac{1}{(2\pi)^{d/2}(1-t)^d}\exp\left(-\frac{\|\mathbf{x}-t\mathbf{x}_1\|^2}{2(1-t)^2}\right),
+\]
+which is the density of $\mathcal{N}(t\mathbf{x}_1,(1-t)^2\mathbf{I}_d)$.
+\end{proof}
+
+So each data point generates a Gaussian sub-cloud, centred at $t\mathbf{x}_1$ and of width $1-t$, and the full cloud is their mixture:
+\[
+p_t(\mathbf{x})=\int p_t(\mathbf{x}\mid\mathbf{x}_1)\,p_1(\mathbf{x}_1)\,\mathrm{d}\mathbf{x}_1 .
+\]
+By Bayes' rule, the probability that a point found at $\mathbf{x}$ came from the data point $\mathbf{x}_1$ is the \emph{posterior}
+\[
+w_t(\mathbf{x}_1\mid\mathbf{x}):=\frac{p_t(\mathbf{x}\mid\mathbf{x}_1)\,p_1(\mathbf{x}_1)}{p_t(\mathbf{x})} ,
+\]
+a probability density in $\mathbf{x}_1$ for each fixed $\mathbf{x}$. These are exactly the weights responsible for the failure above. Averages against them are conditional expectations: for any function $g$, $\int g(\mathbf{x}_1)\,w_t(\mathbf{x}_1\mid\mathbf{x})\,\mathrm{d}\mathbf{x}_1=\mathbb{E}[g(\mathbf{x}_1)\mid\mathbf{x}_t=\mathbf{x}]$. The next lemma shows that, unlike divergences, the scores of the mixture \emph{are} posterior averages of the scores of the sub-clouds.
+
+\begin{lemma}[Scores of a mixture; \citealp{vincent2011}]\label{lem:mixscores}
+For every $\mathbf{x}\in\mathbb{R}^d$ and $t\in[0,1)$,
+\[
+\nabla\log p_t(\mathbf{x})=\mathbb{E}\left[\nabla_{\mathbf{x}}\log p_t(\mathbf{x}\mid\mathbf{x}_1)\,\middle|\,\mathbf{x}_t=\mathbf{x}\right],
+\qquad
+\partial_t\log p_t(\mathbf{x})=\mathbb{E}\left[\partial_t\log p_t(\mathbf{x}\mid\mathbf{x}_1)\,\middle|\,\mathbf{x}_t=\mathbf{x}\right],
+\]
+where the expectations are over $\mathbf{x}_1\sim w_t(\cdot\mid\mathbf{x})$.
+\end{lemma}
+
+\begin{proof}
+We prove the space score; the time score is identical with $\nabla$ replaced by $\partial_t$. Differentiate the mixture formula in $\mathbf{x}$. The weight $p_1(\mathbf{x}_1)$ does not depend on $\mathbf{x}$, so, exchanging derivative and integral,
+\[
+\nabla p_t(\mathbf{x})=\int\nabla_{\mathbf{x}}p_t(\mathbf{x}\mid\mathbf{x}_1)\,p_1(\mathbf{x}_1)\,\mathrm{d}\mathbf{x}_1 .
+\]
+Write the derivative of each sub-cloud through its own score, $\nabla_{\mathbf{x}}p_t(\mathbf{x}\mid\mathbf{x}_1)=p_t(\mathbf{x}\mid\mathbf{x}_1)\,\nabla_{\mathbf{x}}\log p_t(\mathbf{x}\mid\mathbf{x}_1)$, and divide both sides by $p_t(\mathbf{x})>0$:
+\[
+\nabla\log p_t(\mathbf{x})=\frac{\nabla p_t(\mathbf{x})}{p_t(\mathbf{x})}=\int\nabla_{\mathbf{x}}\log p_t(\mathbf{x}\mid\mathbf{x}_1)\,\underbrace{\frac{p_t(\mathbf{x}\mid\mathbf{x}_1)\,p_1(\mathbf{x}_1)}{p_t(\mathbf{x})}}_{=\,w_t(\mathbf{x}_1\mid\mathbf{x})}\,\mathrm{d}\mathbf{x}_1 .
+\]
+The right-hand side is the posterior average of the sub-cloud scores, which is the claim. For the time score, the same steps apply because $p_1(\mathbf{x}_1)$ does not depend on $t$ either.
+\end{proof}
+
+The difference from the failed attempt is worth stating. The derivative of the mixture is the plain average of the derivatives of the sub-clouds, $\nabla p_t=\int\nabla_{\mathbf{x}}p_t(\cdot\mid\mathbf{x}_1)\,p_1\,\mathrm{d}\mathbf{x}_1$, because the mixing weights $p_1(\mathbf{x}_1)$ do not depend on $\mathbf{x}$ or $t$. Dividing by $p_t$ then turns them into the posterior weights. Scores therefore pass through the average, while divergences of the velocity do not. Combined with Lemma~\ref{lem:divscores}, this reduces the divergence to quantities with per-pair labels, and since each sub-cloud is Gaussian (Lemma~\ref{lem:conddens}), its two scores have closed forms.
+
+\begin{proposition}[Conditional scores]\label{prop:condscores}
+For every $\mathbf{x}_1\in\mathbb{R}^d$, $\mathbf{x}\in\mathbb{R}^d$ and $t\in[0,1)$, the scores of the sub-cloud $p_t(\cdot\mid\mathbf{x}_1)$ are
+\[
+\nabla_{\mathbf{x}}\log p_t(\mathbf{x}\mid\mathbf{x}_1)=-\frac{\mathbf{x}-t\mathbf{x}_1}{(1-t)^2},
+\qquad
+\partial_t\log p_t(\mathbf{x}\mid\mathbf{x}_1)=\frac{d}{1-t}+\frac{\mathbf{x}_1\cdot(\mathbf{x}-t\mathbf{x}_1)}{(1-t)^2}-\frac{\|\mathbf{x}-t\mathbf{x}_1\|^2}{(1-t)^3}.
+\]
+In particular, at the point $\mathbf{x}=\mathbf{x}_t=(1-t)\mathbf{x}_0+t\mathbf{x}_1$ generated by a pair $(\mathbf{x}_0,\mathbf{x}_1)$,
+\[
+\nabla_{\mathbf{x}}\log p_t(\mathbf{x}_t\mid\mathbf{x}_1)=-\frac{\mathbf{x}_0}{1-t},
+\qquad
+\partial_t\log p_t(\mathbf{x}_t\mid\mathbf{x}_1)=\frac{d+\mathbf{x}_0\cdot(\mathbf{x}_1-\mathbf{x}_0)}{1-t}.
+\]
+\end{proposition}
+
+\begin{proof}
+By Lemma~\ref{lem:conddens}, taking logarithms of the Gaussian density,
+\[
+\log p_t(\mathbf{x}\mid\mathbf{x}_1)=-\frac{d}{2}\log(2\pi)-d\log(1-t)-\frac{\|\mathbf{r}\|^2}{2(1-t)^2},\qquad\mathbf{r}:=\mathbf{x}-t\mathbf{x}_1 .
+\]
+Note that $\nabla_{\mathbf{x}}\mathbf{r}=\mathbf{I}_d$ and $\partial_t\mathbf{r}=-\mathbf{x}_1$.
+
+\emph{Space score.} Only the last term depends on $\mathbf{x}$, and $\nabla_{\mathbf{x}}\|\mathbf{r}\|^2=2\mathbf{r}$, so
+\[
+\nabla_{\mathbf{x}}\log p_t(\mathbf{x}\mid\mathbf{x}_1)=-\frac{2\mathbf{r}}{2(1-t)^2}=-\frac{\mathbf{x}-t\mathbf{x}_1}{(1-t)^2}.
+\]
+
+\emph{Time score.} The constant has zero derivative, and $\partial_t\left[-d\log(1-t)\right]=\frac{d}{1-t}$. For the last term, the product rule gives
+\[
+\partial_t\left[-\frac{\|\mathbf{r}\|^2}{2}\,(1-t)^{-2}\right]
+=-\frac{2\,\mathbf{r}\cdot\partial_t\mathbf{r}}{2}\,(1-t)^{-2}-\frac{\|\mathbf{r}\|^2}{2}\cdot2(1-t)^{-3}
+=\frac{\mathbf{x}_1\cdot\mathbf{r}}{(1-t)^2}-\frac{\|\mathbf{r}\|^2}{(1-t)^3}.
+\]
+Adding the two contributions gives the stated time score.
+
+\emph{At a training pair.} If $\mathbf{x}=\mathbf{x}_t$, then $\mathbf{r}=\mathbf{x}_t-t\mathbf{x}_1=(1-t)\mathbf{x}_0$. Substituting into the space score gives $-(1-t)\mathbf{x}_0/(1-t)^2=-\mathbf{x}_0/(1-t)$. Substituting into the time score,
+\[
+\frac{d}{1-t}+\frac{(1-t)\,\mathbf{x}_1\cdot\mathbf{x}_0}{(1-t)^2}-\frac{(1-t)^2\|\mathbf{x}_0\|^2}{(1-t)^3}
+=\frac{d+\mathbf{x}_0\cdot\mathbf{x}_1-\|\mathbf{x}_0\|^2}{1-t}
+=\frac{d+\mathbf{x}_0\cdot(\mathbf{x}_1-\mathbf{x}_0)}{1-t}. \qedhere
+\]
+\end{proof}
+
+At a training pair, both scores are computed from $\mathbf{x}_0$ and $\mathbf{x}_1$ alone, with no derivatives of any network and no knowledge of $p_1$. This is the source of the $d/(1-t)$ term in the final label, and of the $1/(1-t)$ factors that make it grow as $t\to1$.
+
+\begin{theorem}[The SCALLOP divergence label; \citealp{ouyang2026}]\label{thm:scallop}
+Consider the linear interpolant with the independent coupling and $p_0=\mathcal{N}(\mathbf{0},\mathbf{I}_d)$, and let $t\in[0,1)$. For a training pair $(\mathbf{x}_0,\mathbf{x}_1)$ with $\mathbf{x}_t=(1-t)\mathbf{x}_0+t\mathbf{x}_1$, define
+\[
+Y_t:=\frac{d}{1-t}-\frac{\mathbf{x}_0\cdot\left(\mathbf{v}_t(\mathbf{x}_t)-(\mathbf{x}_1-\mathbf{x}_0)\right)}{1-t}.
+\]
+Then, for every $\mathbf{x}\in\mathbb{R}^d$,
+\[
+\mathbb{E}\left[Y_t\mid\mathbf{x}_t=\mathbf{x}\right]=-\left(\nabla\cdot\mathbf{v}_t\right)(\mathbf{x}).
+\]
+That is, $Y_t$ is an unbiased regression target for minus the divergence (Definition~\ref{def:unbiased}). It is computed from the pair and the velocity at $\mathbf{x}_t$ alone, with no derivatives.
+\end{theorem}
+
+\begin{proof}
+Fix $\mathbf{x}\in\mathbb{R}^d$. We assemble the label in four steps.
+
+\emph{Step 1: divergence through scores.} By Lemma~\ref{lem:divscores},
+\[
+-\left(\nabla\cdot\mathbf{v}_t\right)(\mathbf{x})=\partial_t\log p_t(\mathbf{x})+\mathbf{v}_t(\mathbf{x})\cdot\nabla\log p_t(\mathbf{x}).
+\]
+
+\emph{Step 2: scores as posterior averages.} By Lemma~\ref{lem:mixscores}, both scores are averages of the sub-cloud scores over $\mathbf{x}_1\sim w_t(\cdot\mid\mathbf{x})$. The vector $\mathbf{v}_t(\mathbf{x})$ does not depend on $\mathbf{x}_1$, so it can be moved inside the second average, and by linearity
+\[
+-\left(\nabla\cdot\mathbf{v}_t\right)(\mathbf{x})=\mathbb{E}\left[\partial_t\log p_t(\mathbf{x}\mid\mathbf{x}_1)+\mathbf{v}_t(\mathbf{x})\cdot\nabla_{\mathbf{x}}\log p_t(\mathbf{x}\mid\mathbf{x}_1)\,\middle|\,\mathbf{x}_t=\mathbf{x}\right].
+\]
+
+\emph{Step 3: from data points to pairs.} The expectation above is over the data point $\mathbf{x}_1$ alone, whereas $Y_t$ depends on the whole pair. Given $\mathbf{x}_t=\mathbf{x}$ and $\mathbf{x}_1$, the noise is determined, $\mathbf{x}_0=(\mathbf{x}-t\mathbf{x}_1)/(1-t)$, so conditioning on $\mathbf{x}_t=\mathbf{x}$ and averaging over $\mathbf{x}_1$ is the same as averaging over pairs that pass through $\mathbf{x}$ at time $t$. Any function of the pair may therefore be written as a function of $\mathbf{x}_1$ inside this expectation, and conversely.
+
+\emph{Step 4: insert the Gaussian scores.} Inside the expectation $\mathbf{x}=\mathbf{x}_t$, so Proposition~\ref{prop:condscores} gives the sub-cloud scores in terms of the pair:
+\[
+\partial_t\log p_t(\mathbf{x}_t\mid\mathbf{x}_1)=\frac{d+\mathbf{x}_0\cdot(\mathbf{x}_1-\mathbf{x}_0)}{1-t},
+\qquad
+\nabla_{\mathbf{x}}\log p_t(\mathbf{x}_t\mid\mathbf{x}_1)=-\frac{\mathbf{x}_0}{1-t}.
+\]
+Substituting, the integrand becomes
+\[
+\frac{d+\mathbf{x}_0\cdot(\mathbf{x}_1-\mathbf{x}_0)}{1-t}-\frac{\mathbf{v}_t(\mathbf{x}_t)\cdot\mathbf{x}_0}{1-t}
+=\frac{d}{1-t}-\frac{\mathbf{x}_0\cdot\left(\mathbf{v}_t(\mathbf{x}_t)-(\mathbf{x}_1-\mathbf{x}_0)\right)}{1-t}=Y_t .
+\]
+Hence $-(\nabla\cdot\mathbf{v}_t)(\mathbf{x})=\mathbb{E}[Y_t\mid\mathbf{x}_t=\mathbf{x}]$.
+\end{proof}
+
+\paragraph{Reading the label.} The two terms of $Y_t$ have a clear meaning.
+\begin{itemize}
+\item The first term, $d/(1-t)$, is the same for every pair. It is exactly the naive answer of the beginning of this section (with the sign appropriate for $-\nabla\cdot\mathbf{v}_t$): the contraction of each Gaussian sub-cloud as it shrinks towards its data point.
+\item The second term is the correction that the naive computation dropped. It compares the field's velocity $\mathbf{v}_t(\mathbf{x}_t)$ with the pair's own velocity $\mathbf{x}_1-\mathbf{x}_0$, projected on the noise $\mathbf{x}_0$. Averaged over the pairs passing through $\mathbf{x}$, it accounts for how the posterior weights shift as $\mathbf{x}$ moves.
+\end{itemize}
+Each individual label is noisy and does not equal the divergence. Only its conditional average does, exactly as for the per-pair velocity in Part~1.
+
+\paragraph{Using the label in training.} By Theorem~\ref{thm:bestpred}, regressing $D_\theta(\mathbf{x}_t,t,t)$ onto $Y_t$ in the diagonal divergence loss $\mathcal{L}_{\mathrm{div}}$ makes the density head learn $-\nabla\cdot\mathbf{v}_t$, without ever computing a divergence. In SCALLOP the velocity $\mathbf{v}_t(\mathbf{x}_t)$ inside $Y_t$ is the pretrained teacher $\mathbf{v}_\phi(\mathbf{x}_t,t)$, so the label is unbiased only insofar as the teacher is exact; the paper lists this assumption as a limitation. Both terms of $Y_t$ carry a factor $1/(1-t)$: the label has high variance as $t\to1$ and a singularity at $t=1$, as noted by \citet{ouyang2026}, who refer to \citet{song2021}. This is why SCALLOP weights $\mathcal{L}_{\mathrm{div}}$ by $w(t)=1-t$ and draws times only up to $1-10^{-5}$.
+
+\paragraph{Why a vector head and a vector label.} The divergence is a single number, but it is a sum of $d$ terms, one per coordinate: $\nabla\cdot\mathbf{v}_t=\sum_i\partial v_t^{(i)}/\partial x^{(i)}$. SCALLOP \citep{ouyang2026} regresses each term separately rather than only their total. The label splits in the same way: the vector
+\[
+\mathbf{Y}_t:=\frac{1}{1-t}\left(\mathbf{1}_d-\mathbf{x}_0\odot\left(\mathbf{v}_t(\mathbf{x}_t)-(\mathbf{x}_1-\mathbf{x}_0)\right)\right)\in\mathbb{R}^d,
+\]
+where $\odot$ is the entrywise product, has conditional mean equal to the diagonal of $-\mathbf{J}_{\mathbf{v}_t}$, and its entries sum to the scalar label $Y_t$. The reason for doing this is the amount of information each training example carries. A scalar target gives the network one number per example, which tells it only the total and nothing about how that total is made up; as the paper puts it, learning to predict the scalar directly is more data-intensive than learning from a vector signal. A vector target gives $d$ numbers per example, so the network is told how much each coordinate contributes, and errors in individual coordinates cannot hide behind a correct-looking sum. Nothing is lost at the end: summing the entries of the head recovers the divergence on the diagonal and the log-density change over a jump, $\lambda_\theta=(s-t)\,\mathbf{1}_d^\top\mathbf{D}_\theta$. A practical by-product, noted in the paper, is that the density head then has the same output shape as the flow map head $\mathbf{u}_\theta$, so both can use the same architecture. The paper attributes SCALLOP's lower training variance to the combination of this vectorisation with removing Hutchinson's estimator, without isolating the contribution of vectorisation alone.
+
+
+\newpage
+
+\section{SCALLOP assembled}\label{sec:assembled}
+
+\paragraph{General description.} We now put the pieces together, following \citet{ouyang2026}. SCALLOP produces a single network with two outputs on a shared body: a flow map head $\mathbf{u}_\theta$, which jumps a point between two times, and a density head $D_\theta$, which predicts how much the log-density changes over that jump. Both are learned by distillation from a pretrained velocity field, and once trained they give a sample together with its log-density in a few network evaluations.
+
+\paragraph{Stage 1: a teacher velocity field.} SCALLOP assumes a pretrained velocity field $\mathbf{v}_\phi\approx\mathbf{v}_t$ is available, for instance one trained by flow matching as in Part~1. It is frozen and only queried: it supplies the targets for the velocity diagonal and the velocity inside the divergence label.
+
+\paragraph{Stage 2: training the two heads.} Each training step draws noise--data pairs and random times and combines three kinds of term, all on the same network.
+\begin{itemize}
+\item \emph{Velocity diagonal.} At a single time $t$, the zero-length output $\mathbf{u}_\theta(\mathbf{x}_t,t,t)$ is regressed onto the teacher's velocity (Section~\ref{sec:trainflow}).
+\item \emph{Density diagonal.} At the same time, $D_\theta(\mathbf{x}_t,t,t)$ is regressed onto the derivative-free label $Y_t$, built from the pair and the teacher's velocity (Theorem~\ref{thm:scallop}), with weight $1-t$ to control the noise near $t=1$.
+\item \emph{Self-distillation.} At a pair of times $t<s$, both heads are trained to agree with their own diagonals at the landing point of the jump, with stop-gradients on the target and on the $s$-derivative (Sections~\ref{sec:trainflow} and~\ref{sec:traindensity}). This is where the long jumps and the log-density increments over them are learned.
+\end{itemize}
+The terms are combined with learned weights, and times are kept away from $t=1$, as described in Section~\ref{sec:traindensity}. No divergence is ever computed: the only derivative needed is the derivative in $s$ of the network's output, obtained with one Jacobian--vector product.
+
+\begin{algorithm}[htbp]
+\caption{SCALLOP: training}\label{alg:scallop}
+\begin{algorithmic}[1]
+\Require frozen teacher $\mathbf{v}_\phi$; network $\mathbf{f}_\theta=(\mathbf{u}_\theta,D_\theta)$; weight network $w_\psi$; batch size $B$; $\epsilon=10^{-5}$
+\Repeat
+\For{$b=1,\dots,B$} \Comment{indices $(b)$ dropped below}
+\State Sample $\mathbf{x}_0\sim\mathcal{N}(\mathbf{0},\mathbf{I}_d)$, $\mathbf{x}_1\sim p_1$, $t\sim\mathcal{U}[0,1-\epsilon]$; set $\mathbf{x}_t\gets(1-t)\mathbf{x}_0+t\mathbf{x}_1$
+\State $\mathbf{v}\gets\mathbf{v}_\phi(\mathbf{x}_t,t)$
+\State $Y\gets\dfrac{d}{1-t}-\dfrac{\mathbf{x}_0\cdot\left(\mathbf{v}-(\mathbf{x}_1-\mathbf{x}_0)\right)}{1-t}$ \Comment{Theorem~\ref{thm:scallop}}
+\State $\ell_{\mathrm{inst}}\gets\left\|\mathbf{u}_\theta(\mathbf{x}_t,t,t)-\mathbf{v}\right\|^2+(1-t)\left|D_\theta(\mathbf{x}_t,t,t)-Y\right|^2$
+\State Sample $(t',s)$ uniformly on $\{0\le t'<s\le1-\epsilon\}$; set $\mathbf{x}_{t'}\gets(1-t')\mathbf{x}_0+t'\mathbf{x}_1$
+\State $\left(\mathbf{f},\,\partial_s\mathbf{f}\right)\gets\mathbf{f}_\theta(\mathbf{x}_{t'},t',s)$ and its $s$-derivative, by one JVP with tangent $(\mathbf{0},0,1)$
+\State $\hat{\mathbf{x}}_s\gets\mathbf{x}_{t'}+(s-t')\,\mathbf{u}_\theta(\mathbf{x}_{t'},t',s)$
+\State $\ell_{\mathrm{SD}}\gets\left\|\mathbf{f}+(s-t')\operatorname{sg}\left[\partial_s\mathbf{f}\right]-\operatorname{sg}\left[\mathbf{f}_\theta(\hat{\mathbf{x}}_s,s,s)\right]\right\|^2$
+\EndFor
+\State $\hat{\mathcal{L}}(\theta,\psi)\gets\dfrac{1}{B}\displaystyle\sum_{b=1}^{B}\Big[e^{-w_\psi(t,t)}\,\ell_{\mathrm{inst}}+w_\psi(t,t)+e^{-w_\psi(t',s)}\,\ell_{\mathrm{SD}}+w_\psi(t',s)\Big]$
+\State Take a gradient step on $\hat{\mathcal{L}}$ in $(\theta,\psi)$
+\Until{converged}
+\end{algorithmic}
+\end{algorithm}
+
+In line 5 the scalar label is shown; with SCALLOP's vector head (Section~\ref{sec:label}) it is replaced by $\mathbf{Y}=\frac{1}{1-t}\big(\mathbf{1}_d-\mathbf{x}_0\odot(\mathbf{v}-(\mathbf{x}_1-\mathbf{x}_0))\big)$ and the absolute value by the Euclidean norm. Line 7 reuses the same pair at a second time; drawing a fresh pair is equally valid.
+
+\paragraph{Stage 3: sampling with densities.} The trained network is used as in Algorithm~\ref{alg:flowdensity}: draw noise, whose log-density is known exactly, and make $N$ jumps along a time grid. At each jump the flow map head moves the point and the density head adds the predicted change in log-density, evaluated at the start of the jump. A sample and its log-density therefore cost $N$ network evaluations, the same as a sample alone. The number of jumps is chosen at sampling time; the paper notes that although one jump is possible, it uses around ten for high-dimensional tasks.
+
+\paragraph{Stage 4: using the densities.} Having the model's log-density for every sample is what makes the model useful beyond generation. In the paper's molecular experiments, the samples are reweighted by comparing the model's density with the target Boltzmann density, which corrects for the model's errors. Using exact model densities in this way is the idea of Boltzmann generators \citep{noe2019}. This requires one density per sample, and is affordable only because SCALLOP provides it at the cost of a few jumps.
+
+\paragraph{Summary.} Part~1 learned a velocity field from samples alone, at the price of integrating an ODE for every sample and of a divergence integral for every density. SCALLOP keeps the velocity field as a teacher and distils two things from it: the jumps of its flow, by self-distillation, and the log-density change over each jump, using a regression label whose average is minus the divergence but which needs no derivatives. Samples and densities then both cost a few network evaluations.
+
+
+\newpage
+
+\section{A note on the learned loss weights}\label{sec:weights}
+
+\paragraph{Where they come from.} SCALLOP's objective multiplies the terms at a single time by $e^{-w_\psi(t,t)}$ and the self-distillation term at a pair of times by $e^{-w_\psi(t,s)}$, and adds $w_\psi(t,t)$ and $w_\psi(t,s)$ to the loss \citep[Eq.~24]{ouyang2026}. The paper states that it follows \citet{boffi2025build} and \citet{ai2026} in using these learned weights, with $w_\psi$ a shallow scalar-valued neural network of the times; it does not explain their purpose further. The same form, a loss multiplied by a learned $e^{-u}$ with $u$ added to the objective, is used to weight the losses at different noise levels in EDM2 \citep{karras2024}, and is closely related to the uncertainty weighting of multi-task losses of \citet{kendall2018}.
+
+\paragraph{What they do.} The following is the standard reading of this form, not a claim made in SCALLOP. Fix a time (or a pair of times) and let $\mathcal{L}>0$ be the value of the loss there. The weight network minimises $e^{-w}\mathcal{L}+w$ over $w$. Setting the derivative to zero,
+\[
+-e^{-w}\mathcal{L}+1=0\qquad\Longrightarrow\qquad e^{w}=\mathcal{L},\quad w=\log\mathcal{L},
+\]
+and at this value the weighted term is $e^{-w}\mathcal{L}=1$. The learned weights therefore bring the losses at all times to a comparable scale: times whose loss is naturally large are scaled down and times whose loss is small are scaled up, so that no region of $[0,1]$, or of the triangle of time pairs, dominates the gradient. The added term $w$ is what prevents the trivial solution $w\to\infty$, which would set every weight to zero. Finally, since each weight is a positive number multiplying the loss at one time, it does not change the minimiser over $\theta$ at that time (Theorem~\ref{thm:bestpred}); like the factor $1-t$, it only changes how much effort the optimiser spends on each time.
+
+\newpage
+
+\part{Enforcing invertibility}\label{part:three}
+
+These notes have so far presented flow maps, the SCALLOP algorithm we wish to improve upon \citep{ouyang2026}, and the related methods F2D2 \citep{ai2026} and FALCON \citep{rehman2026}. Our goal is to make the samples and their densities more accurate. A natural idea, taken from FALCON, is to require that jumping from $t$ to $s$ and then back from $s$ to $t$ returns to the starting point. SCALLOP trains the network only on pairs $t<s$, so nothing currently enforces this. In this part we make the property precise, extend it to log-densities, and postulate losses that enforce it.
+
+\section{Cycle consistency of the flow map}\label{sec:cyclemap}
+
+\begin{definition}[Cycle consistency]\label{def:cycle}
+Let $\boldsymbol{\Phi}_\theta(\mathbf{x},t,s)=\mathbf{x}+(s-t)\,\mathbf{u}_\theta(\mathbf{x},t,s)$ be a neural flow map and $\lambda_\theta(\mathbf{x},t,s)=(s-t)\,D_\theta(\mathbf{x},t,s)$ its density head. The flow map is \emph{cycle-consistent} if
+\[
+\boldsymbol{\Phi}_\theta\left(\boldsymbol{\Phi}_\theta(\mathbf{x},t,s),s,t\right)=\mathbf{x}\qquad\text{for all }\mathbf{x}\in\mathbb{R}^d\text{ and }t,s\in[0,1],
+\]
+and the density head is \emph{cycle-consistent} if
+\[
+\lambda_\theta(\mathbf{x},t,s)+\lambda_\theta\left(\boldsymbol{\Phi}_\theta(\mathbf{x},t,s),s,t\right)=0\qquad\text{for all }\mathbf{x}\in\mathbb{R}^d\text{ and }t,s\in[0,1].
+\]
+\end{definition}
+
+Both conditions hold for the exact flow map and increment. The first follows from composition and the zero-length jump (Proposition~\ref{prop:flowprops}(a),(c)). For the second, additivity (Proposition~\ref{prop:lambdaprops}(a),(c)) with the times $t\to s\to t$ gives $\lambda(\mathbf{x},t,s)+\lambda(\boldsymbol{\Phi}(\mathbf{x},t,s),s,t)=\lambda(\mathbf{x},t,t)=0$. Enforcing them therefore does not change what the network should learn. The backward increment is evaluated at the \emph{landing point}, not at $\mathbf{x}$: the increment from $\mathbf{x}$ backwards in time follows a different trajectory.
+
+\begin{proposition}[Cycle consistency gives invertibility]\label{prop:cycleinv}
+If the flow map is cycle-consistent, then for all $t,s\in[0,1]$ the jump $\boldsymbol{\Phi}_\theta(\cdot,t,s)$ is invertible, with inverse $\boldsymbol{\Phi}_\theta(\cdot,s,t)$.
+\end{proposition}
+
+\begin{proof}
+The condition with the pair $(t,s)$ gives $\boldsymbol{\Phi}_\theta(\cdot,s,t)\circ\boldsymbol{\Phi}_\theta(\cdot,t,s)=\mathrm{id}$, and with the pair $(s,t)$ gives $\boldsymbol{\Phi}_\theta(\cdot,t,s)\circ\boldsymbol{\Phi}_\theta(\cdot,s,t)=\mathrm{id}$. A map with a two-sided inverse is invertible.
+\end{proof}
+
+\section{Invertibility with log-densities: the augmented jump}\label{sec:augjump}
+
+\paragraph{The density head is not invertible.} For fixed times, $\lambda_\theta(\cdot,t,s)$ is a continuous map from $\mathbb{R}^d$ to $\mathbb{R}$, and for $d\ge2$ no such map is even injective. For example, a constant velocity field $\mathbf{v}_t(\mathbf{x})=\mathbf{c}$ has zero divergence, so by Proposition~\ref{prop:lambdaint} its increment is identically zero, although every point moves. The increment records only the \emph{change} in log-density along a jump, not the position. Invertibility must therefore be asked of the jump and the running log-density together.
+
+\begin{definition}[Accumulator and augmented jump]\label{def:augjump}
+For $t,s\in[0,1]$, the \emph{log-density accumulator} $\Lambda_{t,s}:\mathbb{R}^d\times\mathbb{R}\to\mathbb{R}$ and the \emph{augmented jump} $\boldsymbol{\Psi}_{t,s}:\mathbb{R}^d\times\mathbb{R}\to\mathbb{R}^d\times\mathbb{R}$ are
+\[
+\Lambda_{t,s}(\mathbf{x},\ell):=\ell+\lambda(\mathbf{x},t,s),\qquad
+\boldsymbol{\Psi}_{t,s}(\mathbf{x},\ell):=\left(\boldsymbol{\Phi}(\mathbf{x},t,s),\;\Lambda_{t,s}(\mathbf{x},\ell)\right).
+\]
+The accumulator updates a running log-density $\ell$ over the jump, and the augmented jump moves the point and updates its log-density together.
+\end{definition}
+
+With $\ell=0$, $\boldsymbol{\Psi}_{t,s}(\mathbf{x},0)=(\boldsymbol{\Phi}(\mathbf{x},t,s),\lambda(\mathbf{x},t,s))$ is the likelihood flow map of \citet{ouyang2026}, which stacks the position and the log-density change.
+
+\begin{proposition}[The augmented jump transports log-densities]\label{prop:augtransport}
+For all $\mathbf{x}\in\mathbb{R}^d$ and $t,s\in[0,1]$, with $\mathbf{y}=\boldsymbol{\Phi}(\mathbf{x},t,s)$,
+\[
+\boldsymbol{\Psi}_{t,s}\left(\mathbf{x},\log p_t(\mathbf{x})\right)=\left(\mathbf{y},\log p_s(\mathbf{y})\right).
+\]
+\end{proposition}
+
+\begin{proof}
+By Definition~\ref{def:lambda}, $\Lambda_{t,s}(\mathbf{x},\log p_t(\mathbf{x}))=\log p_t(\mathbf{x})+\log p_s(\mathbf{y})-\log p_t(\mathbf{x})=\log p_s(\mathbf{y})$.
+\end{proof}
+
+Composing augmented jumps along a grid from $(\mathbf{x}_0,\log p_0(\mathbf{x}_0))$ is exactly the sampling algorithm with densities (Algorithm~\ref{alg:flowdensity}). The next result shows that the two cycle conditions are precisely what make this procedure reversible.
+
+\begin{proposition}[Invertibility of the augmented jump]\label{prop:augcycle}
+The identity $\boldsymbol{\Psi}^\theta_{s,t}\circ\boldsymbol{\Psi}^\theta_{t,s}=\mathrm{id}$ holds for all $t,s\in[0,1]$ if and only if both the flow map and the density head are cycle-consistent. In that case each $\boldsymbol{\Psi}^\theta_{t,s}$ is invertible, with inverse $\boldsymbol{\Psi}^\theta_{s,t}$.
+\end{proposition}
+
+\begin{proof}
+Write $\hat{\mathbf{y}}=\boldsymbol{\Phi}_\theta(\mathbf{x},t,s)$. By definition,
+\[
+\boldsymbol{\Psi}^\theta_{s,t}\left(\boldsymbol{\Psi}^\theta_{t,s}(\mathbf{x},\ell)\right)=\left(\boldsymbol{\Phi}_\theta(\hat{\mathbf{y}},s,t),\;\ell+\lambda_\theta(\mathbf{x},t,s)+\lambda_\theta(\hat{\mathbf{y}},s,t)\right).
+\]
+This equals $(\mathbf{x},\ell)$ for all $(\mathbf{x},\ell)$ exactly when the first component is $\mathbf{x}$ (cycle consistency of the flow map) and the two increments cancel (cycle consistency of the density head). Applying the identity with the pairs $(t,s)$ and $(s,t)$ gives a two-sided inverse.
+\end{proof}
+
+In particular, the log-density of a given data point can be computed by jumping backwards to noise with the augmented jump. The two conditions are independent, so both must be enforced. Neither makes the density head \emph{correct}: a head can undo itself exactly and still be wrong, for instance because of errors in its training label.
+
+\section{Losses for cycle consistency}\label{sec:cyclelosses}
+
+\paragraph{The residual in terms of the network.} Fix $t<s$, a point $\mathbf{x}_t$ and a running log-density $\ell$. We compute the round trip $\boldsymbol{\Psi}^\theta_{s,t}\circ\boldsymbol{\Psi}^\theta_{t,s}$ step by step, using the parametrisations $\boldsymbol{\Phi}_\theta(\mathbf{x},t,s)=\mathbf{x}+(s-t)\,\mathbf{u}_\theta(\mathbf{x},t,s)$ and $\lambda_\theta(\mathbf{x},t,s)=(s-t)\,D_\theta(\mathbf{x},t,s)$.
+
+\emph{Forward jump.} By Definition~\ref{def:augjump},
+\[
+\boldsymbol{\Psi}^\theta_{t,s}(\mathbf{x}_t,\ell)=\left(\hat{\mathbf{x}}_s,\;\ell+(s-t)\,D_\theta(\mathbf{x}_t,t,s)\right),\qquad
+\hat{\mathbf{x}}_s:=\mathbf{x}_t+(s-t)\,\mathbf{u}_\theta(\mathbf{x}_t,t,s).
+\]
+
+\emph{Backward jump.} The backward jump starts from the output of the forward one and has length $t-s=-(s-t)$, so
+\[
+\boldsymbol{\Psi}^\theta_{s,t}\left(\boldsymbol{\Psi}^\theta_{t,s}(\mathbf{x}_t,\ell)\right)
+=\left(\hat{\mathbf{x}}_s-(s-t)\,\mathbf{u}_\theta(\hat{\mathbf{x}}_s,s,t),\;\ell+(s-t)\,D_\theta(\mathbf{x}_t,t,s)-(s-t)\,D_\theta(\hat{\mathbf{x}}_s,s,t)\right).
+\]
+
+\emph{Position component.} Substituting the definition of $\hat{\mathbf{x}}_s$,
+\[
+\hat{\mathbf{x}}_s-(s-t)\,\mathbf{u}_\theta(\hat{\mathbf{x}}_s,s,t)-\mathbf{x}_t
+=(s-t)\,\mathbf{u}_\theta(\mathbf{x}_t,t,s)-(s-t)\,\mathbf{u}_\theta(\hat{\mathbf{x}}_s,s,t)
+=(s-t)\left(\mathbf{u}_\theta(\mathbf{x}_t,t,s)-\mathbf{u}_\theta(\hat{\mathbf{x}}_s,s,t)\right).
+\]
+
+\emph{Log-density component.} The running value $\ell$ cancels:
+\[
+\ell+(s-t)\,D_\theta(\mathbf{x}_t,t,s)-(s-t)\,D_\theta(\hat{\mathbf{x}}_s,s,t)-\ell
+=(s-t)\left(D_\theta(\mathbf{x}_t,t,s)-D_\theta(\hat{\mathbf{x}}_s,s,t)\right).
+\]
+
+\emph{Residual.} Combining the two components, the round-trip residual is
+\[
+\boldsymbol{\Psi}^\theta_{s,t}\left(\boldsymbol{\Psi}^\theta_{t,s}(\mathbf{x}_t,\ell)\right)-(\mathbf{x}_t,\ell)=(s-t)\Big(\mathbf{u}_\theta(\mathbf{x}_t,t,s)-\mathbf{u}_\theta(\hat{\mathbf{x}}_s,s,t),\;D_\theta(\mathbf{x}_t,t,s)-D_\theta(\hat{\mathbf{x}}_s,s,t)\Big).
+\]
+It does not depend on $\ell$, and since $s\neq t$ it vanishes if and only if both differences vanish. The position component is the residual of the flow map's cycle condition and the log-density component that of the density head's (Definition~\ref{def:cycle}). Both therefore say that the \emph{average} velocity and the \emph{average} log-density rate over a segment of the trajectory are the same whichever end the segment is read from.
+
+\paragraph{Losses for invertibility of the augmented jump.} We postulate the two losses
+\begin{align}
+\mathcal{L}^{\boldsymbol{\Phi}}_{\mathrm{cyc}}(\theta)&:=\mathbb{E}_{t<s}\,\mathbb{E}_{\mathbf{x}_t}\left\|\mathbf{u}_\theta(\mathbf{x}_t,t,s)-\mathbf{u}_\theta(\hat{\mathbf{x}}_s,s,t)\right\|^2,\label{eq:cycphi}\\
+\mathcal{L}^{\lambda}_{\mathrm{cyc}}(\theta)&:=\mathbb{E}_{t<s}\,\mathbb{E}_{\mathbf{x}_t}\left|D_\theta(\mathbf{x}_t,t,s)-D_\theta(\hat{\mathbf{x}}_s,s,t)\right|^2,\label{eq:cyclambda}
+\end{align}
+with $\mathbf{x}_t$ an interpolant sample and $(t,s)$ drawn from $\{0\le t<s\le1\}$ (with SCALLOP's vector head, the absolute value becomes the Euclidean norm). Their sum vanishes exactly when the augmented jump is invertible in the sense of Proposition~\ref{prop:augcycle}. Multiplying both by $(s-t)^2$ gives the squared round-trip residual in position and log-density, which is FALCON's form for the flow map \citep{rehman2026}.
+
+\newpage
+
+\begin{thebibliography}{99}
+
+\bibitem[Ai et~al.(2026)]{ai2026}
+X.~Ai, Y.~He, A.~Gu, R.~Salakhutdinov, J.~Z.~Kolter, N.~M.~Boffi, and M.~Simchowitz.
+\newblock Joint distillation for fast likelihood evaluation and sampling in flow-based models (F2D2).
+\newblock In \emph{International Conference on Learning Representations (ICLR)}, 2026. arXiv:2512.02636.
+
+\bibitem[Albergo et~al.(2023)]{albergo2023stochastic}
+M.~S.~Albergo, N.~M.~Boffi, and E.~Vanden-Eijnden.
+\newblock Stochastic interpolants: A unifying framework for flows and diffusions.
+\newblock arXiv:2303.08797, 2023.
+
+\bibitem[Albergo and Vanden-Eijnden(2023)]{albergo2023building}
+M.~S.~Albergo and E.~Vanden-Eijnden.
+\newblock Building normalizing flows with stochastic interpolants.
+\newblock In \emph{International Conference on Learning Representations (ICLR)}, 2023.
+
+\bibitem[Ambrosio et~al.(2008)]{ambrosio2008}
+L.~Ambrosio, N.~Gigli, and G.~Savar\'e.
+\newblock \emph{Gradient Flows in Metric Spaces and in the Space of Probability Measures}.
+\newblock Lectures in Mathematics ETH Z\"urich. Birkh\"auser, 2nd edition, 2008.
+
+\bibitem[Avron and Toledo(2011)]{avron2011}
+H.~Avron and S.~Toledo.
+\newblock Randomized algorithms for estimating the trace of an implicit symmetric positive semi-definite matrix.
+\newblock \emph{Journal of the ACM}, 58(2):8:1--8:34, 2011.
+
+\bibitem[Boffi et~al.(2024)]{boffi2024flowmap}
+N.~M.~Boffi, M.~S.~Albergo, and E.~Vanden-Eijnden.
+\newblock Flow map matching with stochastic interpolants: A mathematical framework for consistency models.
+\newblock arXiv:2406.07507, 2024.
+
+\bibitem[Boffi et~al.(2025)]{boffi2025build}
+N.~M.~Boffi, M.~S.~Albergo, and E.~Vanden-Eijnden.
+\newblock How to build a consistency model: Learning flow maps via self-distillation.
+\newblock arXiv:2505.18825, 2025.
+
+\bibitem[Chen et~al.(2018)]{chen2018}
+R.~T.~Q. Chen, Y.~Rubanova, J.~Bettencourt, and D.~Duvenaud.
+\newblock Neural ordinary differential equations.
+\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}, 2018.
+
+\bibitem[Geng et~al.(2025)]{geng2025meanflow}
+Z.~Geng, M.~Deng, X.~Bai, J.~Z.~Kolter, and K.~He.
+\newblock Mean flows for one-step generative modeling.
+\newblock arXiv:2505.13447, 2025.
+
+\bibitem[Grathwohl et~al.(2019)]{grathwohl2019}
+W.~Grathwohl, R.~T.~Q. Chen, J.~Bettencourt, I.~Sutskever, and D.~Duvenaud.
+\newblock {FFJORD}: Free-form continuous dynamics for scalable reversible generative models.
+\newblock In \emph{International Conference on Learning Representations (ICLR)}, 2019.
+
+\bibitem[Hutchinson(1989)]{hutchinson1989}
+M.~F.~Hutchinson.
+\newblock A stochastic estimator of the trace of the influence matrix for {L}aplacian smoothing splines.
+\newblock \emph{Communications in Statistics -- Simulation and Computation}, 18(3):1059--1076, 1989.
+
+\bibitem[Karras et~al.(2024)]{karras2024}
+T.~Karras, M.~Aittala, J.~Lehtinen, J.~Hellsten, T.~Aila, and S.~Laine.
+\newblock Analyzing and improving the training dynamics of diffusion models (EDM2).
+\newblock In \emph{IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, 2024.
+
+\bibitem[Kendall et~al.(2018)]{kendall2018}
+A.~Kendall, Y.~Gal, and R.~Cipolla.
+\newblock Multi-task learning using uncertainty to weigh losses for scene geometry and semantics.
+\newblock In \emph{IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, 2018.
+
+\bibitem[Lipman et~al.(2023)]{lipman2023}
+Y.~Lipman, R.~T.~Q. Chen, H.~Ben-Hamu, M.~Nickel, and M.~Le.
+\newblock Flow matching for generative modeling.
+\newblock In \emph{International Conference on Learning Representations (ICLR)}, 2023.
+
+\bibitem[Liu et~al.(2023)]{liu2023}
+X.~Liu, C.~Gong, and Q.~Liu.
+\newblock Flow straight and fast: Learning to generate and transfer data with rectified flow.
+\newblock In \emph{International Conference on Learning Representations (ICLR)}, 2023.
+
+\bibitem[Magnus and Neudecker(2019)]{magnus2019}
+J.~R.~Magnus and H.~Neudecker.
+\newblock \emph{Matrix Differential Calculus with Applications in Statistics and Econometrics}.
+\newblock Wiley, 3rd edition, 2019.
+
+\bibitem[No\'e et~al.(2019)]{noe2019}
+F.~No\'e, S.~Olsson, J.~K\"ohler, and H.~Wu.
+\newblock Boltzmann generators: Sampling equilibrium states of many-body systems with deep learning.
+\newblock \emph{Science}, 365(6457):eaaw1147, 2019.
+
+\bibitem[OuYang et~al.(2026)]{ouyang2026}
+R.~OuYang, H.~Yu, X.~Ai, Y.~He, N.~M.~Boffi, P.~Ravikumar, J.~M.~Hern\'andez-Lobato, M.~Simchowitz, B.~K.~Miller, and O.~Chehab.
+\newblock Few-step {B}oltzmann generators via scalable likelihood flow maps (SCALLOP).
+\newblock arXiv:2606.29110, 2026.
+
+\bibitem[Pooladian et~al.(2023)]{pooladian2023}
+A.-A.~Pooladian, H.~Ben-Hamu, C.~Domingo-Enrich, B.~Amos, Y.~Lipman, and R.~T.~Q. Chen.
+\newblock Multisample flow matching: Straightening flows with minibatch couplings.
+\newblock In \emph{International Conference on Machine Learning (ICML)}, 2023.
+
+\bibitem[Rehman et~al.(2026)]{rehman2026}
+D.~Rehman, T.~Akhound-Sadegh, A.~Gazizov, Y.~Bengio, and A.~Tong.
+\newblock {FALCON}: Few-step accurate likelihoods for continuous flows.
+\newblock In \emph{International Conference on Learning Representations (ICLR)}, 2026. arXiv:2512.09914.
+
+\bibitem[Rezende and Mohamed(2015)]{rezende2015}
+D.~J.~Rezende and S.~Mohamed.
+\newblock Variational inference with normalizing flows.
+\newblock In \emph{International Conference on Machine Learning (ICML)}, 2015.
+
+\bibitem[Song et~al.(2021)]{song2021}
+Y.~Song, J.~Sohl-Dickstein, D.~P.~Kingma, A.~Kumar, S.~Ermon, and B.~Poole.
+\newblock Score-based generative modeling through stochastic differential equations.
+\newblock In \emph{International Conference on Learning Representations (ICLR)}, 2021.
+
+\bibitem[Tong et~al.(2024)]{tong2024}
+A.~Tong, K.~Fatras, N.~Malkin, G.~Huguet, Y.~Zhang, J.~Rector-Brooks, G.~Wolf, and Y.~Bengio.
+\newblock Improving and generalizing flow-based generative models with minibatch optimal transport.
+\newblock \emph{Transactions on Machine Learning Research}, 2024.
+
+\bibitem[Villani(2009)]{villani2009}
+C.~Villani.
+\newblock \emph{Optimal Transport: Old and New}.
+\newblock Grundlehren der mathematischen Wissenschaften 338. Springer, 2009.
+
+\bibitem[Vincent(2011)]{vincent2011}
+P.~Vincent.
+\newblock A connection between score matching and denoising autoencoders.
+\newblock \emph{Neural Computation}, 23(7):1661--1674, 2011.
+
+\end{thebibliography}
+
+\end{document}
