@@ -209,8 +209,60 @@ def test_new_training_optimizer_and_graph_defaults(name, device, override, mode,
         argv += ["--optimizer", "radam", "--decay_steps", "10000", "--no-cuda_graphs"]
     monkeypatch.setattr("sys.argv", argv)
     cfg = learn.setup_config_dict(learn.parse_command_line_arguments())
-    assert cfg.optimization.optimizer == ("radam" if override else "muon_adamw")
-    assert cfg.optimization.decay_steps == (10000 if override else decay)
+    ace_velocity = name == "ace_a_nme" and mode == "pretrain_v"
+    assert cfg.optimization.optimizer == ("radam" if override or ace_velocity else "muon_adamw")
+    assert cfg.optimization.decay_steps == (10000 if override or ace_velocity else decay)
+    assert cfg.optimization.weight_decay == (0. if ace_velocity else 1e-4)
     assert cfg.optimization.total_steps == steps
     assert cfg.training.cuda_graphs is (device.startswith("cuda") and not override)
     assert cfg.network.predict_divergence is (mode in ("dlogpdt", "hutchinson"))
+
+
+def test_ace_velocity_builds_historical_radam_and_allows_explicit_muon(monkeypatch):
+    import math
+    import torch
+    from common import state_utils
+    from launchers import learn
+
+    argv = ["learn.py", "--cfg_path", "configs.ace_a_nme", "--mode", "pretrain_v",
+            "--from_scratch", "--device", "cpu"]
+    monkeypatch.setattr("sys.argv", argv)
+    cfg = learn.setup_config_dict(learn.parse_command_line_arguments())
+    optimizer, schedule = state_utils.setup_optimizer(cfg, torch.nn.Linear(2, 1))
+    assert isinstance(optimizer, torch.optim.RAdam)
+    assert optimizer.param_groups[0]["weight_decay"] == 0
+    assert optimizer.param_groups[0]["betas"] == (.9, .999)
+    for step in (0, 10000, 40000, 200000, 399999):
+        assert schedule(step) == 1e-4 / math.sqrt(max(step / 10000, 1))
+
+    monkeypatch.setattr("sys.argv", argv + ["--optimizer", "muon_adamw",
+                        "--weight_decay", ".0007", "--decay_steps", "12345"])
+    cfg = learn.setup_config_dict(learn.parse_command_line_arguments())
+    assert cfg.optimization.optimizer == "muon_adamw"
+    assert cfg.optimization.weight_decay == .0007
+    assert cfg.optimization.decay_steps == 12345
+
+
+@pytest.mark.parametrize("legacy_muon", [False, True])
+def test_ace_velocity_resume_preserves_selected_recipe(monkeypatch, legacy_muon):
+    import math
+    from common import state_utils
+    from launchers import learn
+
+    argv = ["learn.py", "--cfg_path", "configs.ace_a_nme", "--mode", "pretrain_v",
+            "--device", "cpu", "--network_load_path", "velocity.pt", "--resume_optimizer"]
+    if legacy_muon:
+        argv += ["--optimizer", "muon_adamw", "--weight_decay", "1e-4",
+                 "--decay_steps", "50000"]
+    monkeypatch.setattr("sys.argv", argv)
+    cfg = learn.setup_config_dict(learn.parse_command_line_arguments())
+    assert cfg.network.load_path == "velocity.pt"
+    assert cfg.network.reset_optimizer is False
+    assert cfg.optimization.optimizer == ("muon_adamw" if legacy_muon else "radam")
+    assert cfg.optimization.weight_decay == (1e-4 if legacy_muon else 0.)
+    assert cfg.optimization.schedule_type == "sqrt"
+    decay_steps = 50000 if legacy_muon else 10000
+    assert cfg.optimization.decay_steps == decay_steps
+    schedule = state_utils.setup_schedule(cfg)
+    for step in (200000, 399999):
+        assert schedule(step) == pytest.approx(1e-4 / math.sqrt(step / decay_steps))

@@ -126,7 +126,7 @@ def parse_command_line_arguments():
                              "sqrt decay after 50k without warmup, forward times, vectorized/linear density, "
                              "and CUDA graphs on CUDA; explicit flags override the recipe")
     parser.add_argument("--optimizer", choices=["radam", "muon_adamw"], default=None,
-                        help="default Muon uses hidden attention/MLP matrices with auxiliary AdamW; radam opts out")
+                        help="default: RAdam for Ace-A-Nme velocity; Muon/AdamW for other stages and systems")
     parser.add_argument("--decay_steps", type=int, default=None,
                         help="decay scale for --schedule_type sqrt (cosine uses total_steps)")
     parser.add_argument("--learning_rate", type=float, default=None)
@@ -242,12 +242,16 @@ def apply_loss_family_overrides(cfg, args):
 def setup_config_dict(args):
     cfg_module = importlib.import_module(args.cfg_path)
     cfg = cfg_module.get_config(args.slurm_id, args.dataset_location, args.output_folder)
-    from common.training_recipes import PRETRAIN_DEFAULTS, AAAAAA_PRETRAIN_V_DEFAULTS
+    from common.training_recipes import (
+        PRETRAIN_DEFAULTS, ACE_A_NME_PRETRAIN_V_DEFAULTS, AAAAAA_PRETRAIN_V_DEFAULTS,
+    )
     cfg.optimization.update(PRETRAIN_DEFAULTS.get(args.mode, {}))
     if args.mode in ("pretrain_v", "pretrain_flowmap"):
         cfg.training.offdiag_teacher_source = "self"
     if args.mode == "pretrain_v":
         cfg.training.diag_teacher_source = "conditional"
+        if cfg.problem.target == "ace_a_nme":
+            cfg.optimization.update(ACE_A_NME_PRETRAIN_V_DEFAULTS)
     if args.mode == "dlogpdt":
         cfg.network.div_loss_weighting_type = "linear"
     if cfg.problem.target in ("ala6_implicit", "chignolin") and args.mode == "pretrain_v":

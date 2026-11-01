@@ -37,13 +37,14 @@ def test_resolved_stage_defaults_and_explicit_overrides(mode, total, config, mon
     cfg=learn.setup_config_dict(learn.parse_command_line_arguments())
     assert cfg.optimization.total_steps == total
     a3 = config == "aaaaaa" and mode == "pretrain_v"
+    ace_velocity = config == "ace_a_nme" and mode == "pretrain_v"
     lr = 5e-4 if a3 or mode == "pretrain_flowmap" else 1e-4
     assert cfg.optimization.learning_rate == lr
     assert cfg.training.stopgrad_type == ("convex" if mode == "pretrain_flowmap" else "stopped")
-    assert cfg.optimization.weight_decay == 1e-4
+    assert cfg.optimization.weight_decay == (0. if ace_velocity else 1e-4)
     assert cfg.optimization.schedule_type == ('cosine' if a3 else 'sqrt')
     assert cfg.optimization.warmup_fraction == (.05 if a3 else 0)
-    decay = 10000 if mode == "pretrain_flowmap" else 50000
+    decay = 10000 if ace_velocity or mode == "pretrain_flowmap" else 50000
     assert cfg.optimization.decay_steps == decay
     schedule=state_utils.setup_schedule(cfg)
     if a3:

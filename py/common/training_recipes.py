@@ -19,6 +19,13 @@ PRETRAIN_DEFAULTS = {
 }
 
 
+# Ace's archived velocity teacher used RAdam; its density stages keep Muon.
+ACE_A_NME_PRETRAIN_V_DEFAULTS = dict(
+    optimizer="radam", learning_rate=1e-4, weight_decay=0.,
+    schedule_type="sqrt", warmup_fraction=0., decay_steps=10000,
+)
+
+
 # A3's archived recipe is adopted for AAAAAA and Chignolin velocity pretraining.
 AAAAAA_PRETRAIN_V_DEFAULTS = dict(
     total_steps=400000, learning_rate=5e-4, weight_decay=1e-4,

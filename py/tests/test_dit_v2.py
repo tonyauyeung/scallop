@@ -21,12 +21,13 @@ def test_backbone_and_stage_defaults_are_system_scoped(monkeypatch, system, mode
                                    '--mode', mode, '--device', 'cpu'])
     cfg = learn.setup_config_dict(learn.parse_command_line_arguments())
     a3 = system in ('aaaaaa','chignolin') and mode == 'pretrain_v'
+    ace_velocity = system == 'ace_a_nme' and mode == 'pretrain_v'
     assert get_dit_class(cfg.network) is (FlowMapAtomDiTV2 if system in ('aaaaaa','chignolin') else FlowMapAtomDiT)
     assert cfg.optimization.learning_rate == (5e-4 if a3 or mode == 'pretrain_flowmap' else 1e-4)
     assert cfg.optimization.schedule_type == ('cosine' if a3 else 'sqrt')
     assert cfg.optimization.warmup_fraction == (.05 if a3 else 0)
     assert cfg.optimization.total_steps == (400000 if mode == 'pretrain_v' else 100000)
-    assert cfg.optimization.decay_steps == (10000 if mode == 'pretrain_flowmap' else 50000)
+    assert cfg.optimization.decay_steps == (10000 if ace_velocity or mode == 'pretrain_flowmap' else 50000)
     if a3:
         assert cfg.training.recipe == 'A3' and cfg.optimization.bs == 1024
         assert cfg.training.diag_teacher_source == 'conditional'

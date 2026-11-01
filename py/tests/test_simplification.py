@@ -267,6 +267,7 @@ def test_readme_commands_resolve_without_launching(name, monkeypatch):
         cfg = learn.setup_config_dict(args)
         velocity = mode == 'pretrain_v'
         a3 = velocity and name in ('aaaaaa', 'chignolin')
+        ace_velocity = velocity and name == 'ace_a_nme'
         assert args.mode == cfg.network.divergence_mode == mode
         assert not args.wandb and not args.require_wandb
         assert cfg.problem.ts_data_dir == 'datasets/ts'
@@ -274,12 +275,12 @@ def test_readme_commands_resolve_without_launching(name, monkeypatch):
         assert cfg.optimization.total_steps == (400000 if velocity else 100000)
         assert cfg.optimization.bs == 1024
         assert cfg.optimization.diag_fraction == (1 if velocity else .5)
-        assert cfg.optimization.optimizer == 'muon_adamw'
+        assert cfg.optimization.optimizer == ('radam' if ace_velocity else 'muon_adamw')
         assert cfg.optimization.learning_rate == (5e-4 if a3 else 1e-4)
         assert cfg.optimization.schedule_type == ('cosine' if a3 else 'sqrt')
         assert cfg.optimization.warmup_fraction == (.05 if a3 else 0)
-        assert cfg.optimization.decay_steps == 50000
-        assert cfg.optimization.weight_decay == 1e-4
+        assert cfg.optimization.decay_steps == (10000 if ace_velocity else 50000)
+        assert cfg.optimization.weight_decay == (0. if ace_velocity else 1e-4)
         assert cfg.optimization.clip == 10
         assert cfg.training.loss_type == 'lsd' and cfg.training.stopgrad_type == 'stopped'
         assert cfg.training.seed == 42 and cfg.training.ema_facs == [.999]
